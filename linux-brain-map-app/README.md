@@ -1,44 +1,61 @@
 # Linux Brain Map
 
-Интерактивное веб-приложение для изучения Linux по Кетову: мнемосхемы, таблицы, квизы, bash/python toolkit, cyber hygiene.
+Статическое SPA для изучения Linux по Кетову: мнемосхемы, таблицы, квизы, bash/python toolkit, cyber hygiene.
 
-Собрано на [vibe](https://github.com/di-sukharev/vibe) (React + Vite + TanStack Router + shadcn).
+Деплой: **GitHub Pages** → https://benbakster.github.io/linux-brain-map/
+
+Стек: React + Vite + TanStack Router + shadcn/ui + Tailwind CSS v4.
 
 ## Быстрый старт
 
 ```bash
 cd linux-brain-map-app
 bun install
-bun run dev:webapp
+bun run dev
 ```
 
 Открой http://localhost:5173
 
-## Что внутри
+## Структура
+
+```
+linux-brain-map-app/
+└── webapp/                  ← единственное приложение
+    ├── src/data/            ← контент (modules.ts, hygiene.ts, toolkit.ts)
+    ├── src/pages.tsx        ← все страницы (Dashboard, Module, Toolkit, Hygiene)
+    └── src/lib/progress.ts  ← localStorage прогресс
+```
+
+## Страницы
 
 | Раздел | URL | Содержимое |
 |--------|-----|------------|
 | Модули | `/` | 12 карточек Кетова |
-| Модуль | `/module/architecture` | схема, таблица, квиз, практика |
-| Toolkit | `/toolkit` | bash + python скрипты с копированием |
+| Модуль | `/module/architecture` | схема → таблица → квиз → практика |
+| Toolkit | `/toolkit` | bash + python скрипты с кнопкой копирования |
 | Hygiene | `/hygiene` | чеклист с прогрессом |
 
-Прогресс хранится в `localStorage` браузера.
+Прогресс сохраняется в `localStorage` браузера.
 
-## Связанные папки
+## Практика (скрипты)
 
-```
-IT_Cybersecurity/
-├── linux-brain-map-app/     ← это приложение (vibe webapp)
-├── bash-security-toolkit/   ← скрипты для вкладки «Практика»
-├── python-security/
-├── cyber-hygiene/           ← исходные чеклисты (данные в webapp/src/data/)
-└── linux-brain-map/         ← markdown-версия (архив)
-```
-
-## Сборка
+Скрипты запускаются локально после `git clone`. Клон содержит `bash-security-toolkit/` и `python-security/` рядом с `linux-brain-map-app/`.
 
 ```bash
-bun run build:webapp
+# bash
+cd bash-security-toolkit && ./user_audit.sh
+
+# python
+cd python-security && python3 cve_monitor.py openssh --days 30
+```
+
+## Сборка и деплой
+
+```bash
+# Локальный preview
+bun run build:pages
 bun run --cwd webapp preview
+
+# CI деплой в GitHub Pages — автоматически при push в main
+# .github/workflows/deploy-pages.yml
 ```
