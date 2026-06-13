@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils'
 
 const navLinkClass = cn(
   buttonVariants({ variant: 'ghost', size: 'sm' }),
-  'text-muted-foreground data-[status=active]:bg-accent/20 data-[status=active]:text-[oklch(0.82_0.14_88)] data-[status=active]:shadow-[0_0_12px_oklch(0.76_0.19_48/0.25)]',
+  'text-muted-foreground data-[status=active]:bg-accent/25 data-[status=active]:text-[oklch(0.92_0.06_80)] data-[status=active]:shadow-[0_0_10px_oklch(0.72_0.17_48/0.2)]',
 )
 
 const TOOLKIT_DIR =
@@ -96,7 +96,7 @@ export function DashboardPage() {
       <div className="mb-8 grid gap-4">
         <Badge
           variant="outline"
-          className="w-fit border-accent/50 bg-accent/10 text-[oklch(0.82_0.14_88)]"
+          className="w-fit border-accent/60 bg-accent/15 text-[oklch(0.9_0.08_80)]"
         >
           По Кетову · мнемосхемы вместо чтения
         </Badge>
@@ -125,7 +125,7 @@ export function DashboardPage() {
                   <div className="flex items-start justify-between gap-2">
                     <Badge
                       variant="secondary"
-                      className="border border-primary/30 bg-primary/15 font-mono text-[oklch(0.82_0.14_88)]"
+                      className="border border-primary/40 bg-primary/20 font-mono text-[oklch(0.92_0.06_80)]"
                     >
                       {String(mod.number).padStart(2, '0')}
                     </Badge>
@@ -188,7 +188,7 @@ export function ModulePage() {
 
       <Card className="psy-highlight-card mb-6 backdrop-blur-sm">
         <CardContent className="pt-6">
-          <p className="font-mono text-sm tracking-wide text-[oklch(0.82_0.14_88)]">
+          <p className="font-mono text-sm tracking-wide text-[oklch(0.9_0.08_80)]">
             {mod.mnemonicExpansion}
           </p>
           <p className="mt-2 text-muted-foreground">{mod.summary}</p>

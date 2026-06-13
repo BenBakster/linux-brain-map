@@ -25,7 +25,7 @@ function Progress({
         style={{
           transform: `translateX(-${100 - (value || 0)}%)`,
           background:
-            'linear-gradient(90deg, oklch(0.62 0.26 328), oklch(0.76 0.19 48), oklch(0.82 0.14 88))',
+            'linear-gradient(90deg, oklch(0.52 0.12 35), oklch(0.72 0.17 48), oklch(0.85 0.11 82))',
         }}
       />
     </ProgressPrimitive.Root>
