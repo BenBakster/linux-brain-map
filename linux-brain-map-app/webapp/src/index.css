@@ -96,13 +96,26 @@
   body {
     @apply text-foreground;
     background-color: var(--background);
+    min-height: 100vh;
+  }
+
+  /* Психоделический дрейф: подвижный слой радиальных градиентов за контентом.
+     Анимируется только transform (GPU), текст и интерактив не затрагиваются. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -25%;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--background);
     background-image:
       radial-gradient(ellipse 85% 55% at 20% 30%, oklch(0.38 0.12 38 / 0.45), transparent 55%),
       radial-gradient(ellipse 70% 50% at 80% 20%, oklch(0.42 0.14 52 / 0.35), transparent 50%),
       radial-gradient(ellipse 65% 45% at 65% 85%, oklch(0.32 0.09 30 / 0.4), transparent 55%),
-      radial-gradient(ellipse 45% 35% at 10% 75%, oklch(0.35 0.08 328 / 0.12), transparent 50%);
-    background-attachment: fixed;
-    min-height: 100vh;
+      radial-gradient(ellipse 55% 45% at 12% 78%, oklch(0.42 0.16 328 / 0.26), transparent 55%),
+      radial-gradient(ellipse 48% 40% at 88% 62%, oklch(0.4 0.15 320 / 0.18), transparent 55%);
+    animation: psy-drift 42s ease-in-out infinite alternate;
+    will-change: transform;
   }
 
   /* Вторичный текст читается на ржавом фоне */
@@ -124,6 +137,7 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    animation: psy-hue 16s ease-in-out infinite alternate;
   }
 
   .psy-card-hover {
@@ -131,10 +145,11 @@
   }
 
   .psy-card-hover:hover {
-    border-color: oklch(0.72 0.17 48 / 0.6);
+    border-color: oklch(0.74 0.17 48 / 0.7);
     box-shadow:
-      0 0 20px oklch(0.58 0.14 35 / 0.35),
-      0 0 8px oklch(0.72 0.17 48 / 0.25);
+      0 0 30px oklch(0.58 0.14 35 / 0.5),
+      0 0 14px oklch(0.72 0.17 48 / 0.4),
+      0 0 44px oklch(0.52 0.16 328 / 0.28);
     transform: translateY(-2px);
   }
 
@@ -151,7 +166,10 @@
 
   .psy-mnemonic {
     color: oklch(0.9 0.1 82);
-    text-shadow: 0 0 10px oklch(0.72 0.17 48 / 0.45);
+    text-shadow:
+      0 0 10px oklch(0.72 0.17 48 / 0.5),
+      0 0 18px oklch(0.58 0.14 35 / 0.3);
+    animation: psy-glow 5s ease-in-out infinite;
   }
 
   .psy-arrow {
@@ -203,5 +221,60 @@
   [data-slot='progress'] {
     background: oklch(0.26 0.06 38);
     box-shadow: inset 0 0 6px oklch(0.15 0.05 35 / 0.6);
+  }
+}
+
+/* Медленный дрейф фонового слоя — едва заметное «дыхание» */
+@keyframes psy-drift {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1.06) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(1.5%, 2%, 0) scale(1.12) rotate(1.4deg);
+  }
+  100% {
+    transform: translate3d(2.5%, -1%, 0) scale(1.07) rotate(-1.2deg);
+  }
+}
+
+/* Тёплый hue-сдвиг заголовков в пределах медно-золотого диапазона */
+@keyframes psy-hue {
+  from {
+    filter: hue-rotate(-8deg);
+  }
+  to {
+    filter: hue-rotate(16deg);
+  }
+}
+
+/* Пульсация неонового свечения мнемоник (с фиолетовым всплеском на пике) */
+@keyframes psy-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 8px oklch(0.72 0.17 48 / 0.4),
+      0 0 16px oklch(0.58 0.14 35 / 0.25);
+  }
+  50% {
+    text-shadow:
+      0 0 16px oklch(0.72 0.17 48 / 0.7),
+      0 0 28px oklch(0.58 0.14 35 / 0.45),
+      0 0 40px oklch(0.52 0.16 328 / 0.32);
+  }
+}
+
+/* Доступность: при запросе уменьшить движение — глушим все анимации */
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+
+  .psy-title {
+    animation: none;
+    filter: none;
+  }
+
+  .psy-mnemonic {
+    animation: none;
   }
 }
