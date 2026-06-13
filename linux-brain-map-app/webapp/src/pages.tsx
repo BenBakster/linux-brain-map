@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils'
 
 const navLinkClass = cn(
   buttonVariants({ variant: 'ghost', size: 'sm' }),
-  'text-muted-foreground data-[status=active]:bg-primary/15 data-[status=active]:text-primary',
+  'text-muted-foreground data-[status=active]:bg-accent/20 data-[status=active]:text-[oklch(0.82_0.14_88)] data-[status=active]:shadow-[0_0_12px_oklch(0.76_0.19_48/0.25)]',
 )
 
 const TOOLKIT_DIR =
@@ -51,14 +51,14 @@ export function RootLayout() {
   const hygieneProgress = getHygienePercent(HYGIENE_ITEMS.length)
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-md">
+    <div className="min-h-svh text-foreground">
+      <header className="psy-header sticky top-0 z-50 backdrop-blur-md">
         <div className="mx-auto flex min-h-14 w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-2">
           <Link to="/" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
+            <span className="psy-logo flex h-9 w-9 items-center justify-center rounded-lg text-sm font-black text-primary-foreground">
               L
             </span>
-            <Typography variant="h6" className="hidden sm:block">
+            <Typography variant="h6" className="psy-title hidden font-bold sm:block">
               Linux Brain Map
             </Typography>
           </Link>
@@ -94,10 +94,13 @@ export function DashboardPage() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8">
       <div className="mb-8 grid gap-4">
-        <Badge variant="outline" className="w-fit border-primary/40 text-primary">
+        <Badge
+          variant="outline"
+          className="w-fit border-accent/50 bg-accent/10 text-[oklch(0.82_0.14_88)]"
+        >
           По Кетову · мнемосхемы вместо чтения
         </Badge>
-        <Typography variant="h1" className="max-w-3xl text-3xl sm:text-4xl">
+        <Typography variant="h1" className="psy-title max-w-3xl text-3xl font-bold sm:text-4xl">
           12 модулей Linux — схемы, таблицы, квизы, практика
         </Typography>
         <Typography tone="muted" className="max-w-2xl">
@@ -114,22 +117,27 @@ export function DashboardPage() {
             <Link key={mod.id} to="/module/$moduleId" params={{ moduleId: mod.id }}>
               <Card
                 className={cn(
-                  'h-full transition-all hover:border-primary/50 hover:shadow-md',
-                  done && 'border-green-500/40 bg-green-500/5',
+                  'psy-card-hover h-full border-border/80 bg-card/90 backdrop-blur-sm',
+                  done && 'psy-done',
                 )}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
-                    <Badge variant="secondary" className="font-mono">
+                    <Badge
+                      variant="secondary"
+                      className="border border-primary/30 bg-primary/15 font-mono text-[oklch(0.82_0.14_88)]"
+                    >
                       {String(mod.number).padStart(2, '0')}
                     </Badge>
                     {done && (
-                      <Badge className="bg-green-600 text-white">✓</Badge>
+                      <Badge className="border-0 bg-[oklch(0.58_0.14_145)] text-white shadow-[0_0_10px_oklch(0.58_0.14_145/0.5)]">
+                        ✓
+                      </Badge>
                     )}
                   </div>
-                  <CardTitle className="mt-2">{mod.title}</CardTitle>
+                  <CardTitle className="mt-2 text-foreground">{mod.title}</CardTitle>
                   <CardDescription>
-                    <span className="font-mono font-semibold text-primary">{mod.mnemonic}</span>
+                    <span className="psy-mnemonic font-mono text-lg font-bold">{mod.mnemonic}</span>
                     {' — '}
                     {mod.mnemonicExpansion}
                   </CardDescription>
@@ -170,21 +178,25 @@ export function ModulePage() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6">
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Badge className="font-mono text-base">{mod.mnemonic}</Badge>
-        <Typography variant="h1" className="text-2xl sm:text-3xl">
+        <Badge className="psy-mnemonic border border-accent/40 bg-accent/15 font-mono text-lg">
+          {mod.mnemonic}
+        </Badge>
+        <Typography variant="h1" className="psy-title text-2xl font-bold sm:text-3xl">
           {mod.number}. {mod.title}
         </Typography>
       </div>
 
-      <Card className="mb-6 border-primary/20 bg-primary/5">
+      <Card className="psy-highlight-card mb-6 backdrop-blur-sm">
         <CardContent className="pt-6">
-          <p className="font-mono text-sm text-primary">{mod.mnemonicExpansion}</p>
+          <p className="font-mono text-sm tracking-wide text-[oklch(0.82_0.14_88)]">
+            {mod.mnemonicExpansion}
+          </p>
           <p className="mt-2 text-muted-foreground">{mod.summary}</p>
         </CardContent>
       </Card>
 
       <Tabs defaultValue="scheme" className="grid gap-4">
-        <TabsList className="flex h-auto flex-wrap gap-1">
+        <TabsList className="flex h-auto flex-wrap gap-1 border border-border/60 bg-muted/50 p-1">
           <TabsTrigger value="scheme">Схема</TabsTrigger>
           <TabsTrigger value="table">Таблица</TabsTrigger>
           <TabsTrigger value="decisions">Решения</TabsTrigger>
@@ -271,7 +283,7 @@ export function ModulePage() {
                 </div>
               ))}
               {mod.bashScript && (
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <div className="psy-highlight-card flex flex-wrap items-center gap-2 rounded-lg p-3">
                   <code className="flex-1 font-mono text-sm">{runCmd}</code>
                   <CopyButton text={runCmd} label="Копировать скрипт" />
                 </div>
@@ -325,7 +337,7 @@ export function ModulePage() {
 export function ToolkitPage() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8">
-      <Typography variant="h1" className="mb-2 text-3xl">
+      <Typography variant="h1" className="psy-title mb-2 text-3xl font-bold">
         Bash & Python Toolkit
       </Typography>
       <Typography tone="muted" className="mb-8 max-w-2xl">
@@ -403,7 +415,7 @@ export function HygienePage() {
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-8">
-      <Typography variant="h1" className="mb-2 text-3xl">
+      <Typography variant="h1" className="psy-title mb-2 text-3xl font-bold">
         Cyber Hygiene
       </Typography>
       <Typography tone="muted" className="mb-6">

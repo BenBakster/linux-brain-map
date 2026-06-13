@@ -21,8 +21,12 @@ function Progress({
     >
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
-        className="size-full flex-1 bg-primary transition-all"
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+        className="size-full flex-1 transition-all"
+        style={{
+          transform: `translateX(-${100 - (value || 0)}%)`,
+          background:
+            'linear-gradient(90deg, oklch(0.62 0.26 328), oklch(0.76 0.19 48), oklch(0.82 0.14 88))',
+        }}
       />
     </ProgressPrimitive.Root>
   )

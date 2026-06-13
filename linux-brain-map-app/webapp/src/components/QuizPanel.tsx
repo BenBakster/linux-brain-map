@@ -49,8 +49,10 @@ export function QuizPanel({ moduleId, questions }: QuizPanelProps) {
                   className={cn(
                     'rounded-md border px-3 py-2 text-left text-sm transition-colors',
                     selected && !showResult && 'border-primary bg-primary/10',
-                    showResult && isCorrect && 'border-green-500 bg-green-500/10',
-                    showResult && selected && !isCorrect && 'border-destructive bg-destructive/10',
+                    showResult &&
+                      isCorrect &&
+                      'border-[oklch(0.58_0.14_145)] bg-[oklch(0.58_0.14_145/0.15)] shadow-[0_0_10px_oklch(0.58_0.14_145/0.3)]',
+                    showResult && selected && !isCorrect && 'border-destructive bg-destructive/15',
                     !selected && !showResult && 'hover:bg-muted',
                   )}
                 >
