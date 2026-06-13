@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""TCP port scanner — модуль 11-networking."""
+
+from __future__ import annotations
+
+import argparse
+import socket
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+DEFAULT_PORTS = [
+    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445,
+    993, 995, 1723, 3306, 3389, 5432, 5900, 8080, 8443,
+]
+
+
+def scan_port(host: str, port: int, timeout: float) -> tuple[int, bool]:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        result = sock.connect_ex((host, port))
+        return port, result == 0
+    finally:
+        sock.close()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="TCP port scanner")
+    parser.add_argument("host", help="Целевой хост")
+    parser.add_argument("--ports", help="Список портов через запятую")
+    parser.add_argument("--timeout", type=float, default=1.0)
+    parser.add_argument("--workers", type=int, default=50)
+    args = parser.parse_args()
+
+    if args.ports:
+        ports = [int(p.strip()) for p in args.ports.split(",")]
+    else:
+        ports = DEFAULT_PORTS
+
+    print(f"=== port_scan: {args.host} ({len(ports)} портов) ===\n")
+    open_ports: list[int] = []
+
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = {pool.submit(scan_port, args.host, p, args.timeout): p for p in ports}
+        for future in as_completed(futures):
+            port, is_open = future.result()
+            if is_open:
+                open_ports.append(port)
+                print(f"  OPEN  {port}/tcp")
+
+    if not open_ports:
+        print("  (открытых портов не найдено)")
+    else:
+        print(f"\n  Итого открыто: {len(open_ports)}")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
