@@ -374,9 +374,11 @@ export const MODULES: Module[] = [
       { entity: 'Superblock', where: 'dumpe2fs /dev/sdX', signal: 'corrupt FS' },
       { entity: 'Journal', where: 'tune2fs -l /dev/sdX', signal: 'журнал транзакций' },
       { entity: '/etc', where: 'hash baseline', signal: 'конфигурация — защищать' },
+      { entity: '/bin, /sbin', where: 'find -perm -4000', signal: 'бинарники — SUID audit' },
       { entity: '/home', where: 'ls -la /home', signal: 'права 700 на каталоги' },
       { entity: '/tmp', where: 'ls -ld /tmp', signal: 'sticky bit + noexec' },
       { entity: '/var/log', where: 'ls /var/log', signal: 'ротация, анализ' },
+      { entity: '/proc, /sys', where: 'cat /proc/mounts', signal: 'интерфейс ядра — виртуальные' },
     ],
     decisions: [
       { condition: 'No space', action: 'df -i И df -h (inode!)' },
@@ -491,7 +493,9 @@ export const MODULES: Module[] = [
       { entity: 'Namespaces', where: 'lsns, unshare', signal: 'изоляция PID/net/mount' },
       { entity: 'cgroups v2', where: '/sys/fs/cgroup/', signal: 'лимиты ресурсов: memory.max' },
       { entity: 'seccomp', where: '/proc/PID/status Seccomp', signal: 'фильтр syscalls (Docker)' },
-      { entity: 'SUID', where: 'find /usr/bin -perm -4000', signal: 'запуск от root' },
+      { entity: 'SUID', where: 'find / -perm -4000 2>/dev/null', signal: 'запуск от root' },
+      { entity: 'SGID', where: 'find / -perm -2000 2>/dev/null', signal: 'групповые права' },
+      { entity: 'Sticky /tmp', where: 'ls -ld /tmp', signal: 'защита от удаления чужих файлов' },
       { entity: 'sudo', where: '/etc/sudoers', signal: 'privilege escalation' },
     ],
     decisions: [
