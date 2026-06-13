@@ -1,3 +1,11 @@
+export function bashCmd(usage: string): string {
+  return `cd bash-security-toolkit && ${usage}`
+}
+
+export function pythonCmd(scriptWithArgs: string): string {
+  return `cd python-security && python3 ${scriptWithArgs}`
+}
+
 export type ToolkitScript = {
   id: string
   name: string
@@ -63,7 +71,7 @@ export const PYTHON_SCRIPTS = [
     name: 'Log Anomaly',
     file: 'log_anomaly.py',
     modules: [4, 6, 11],
-    usage: ['python log_anomaly.py /var/log/auth.log --threshold 10'],
+    usage: ['log_anomaly.py /var/log/auth.log --threshold 10'],
     path: `${PYTHON_BASE}/log_anomaly.py`,
   },
   {
@@ -71,7 +79,7 @@ export const PYTHON_SCRIPTS = [
     name: 'Port Scan',
     file: 'port_scan.py',
     modules: [11],
-    usage: ['python port_scan.py 127.0.0.1 --ports 22,80,443'],
+    usage: ['port_scan.py 127.0.0.1 --ports 22,80,443'],
     path: `${PYTHON_BASE}/port_scan.py`,
   },
   {
@@ -79,7 +87,7 @@ export const PYTHON_SCRIPTS = [
     name: 'CVE Monitor',
     file: 'cve_monitor.py',
     modules: [12],
-    usage: ['python cve_monitor.py openssh --days 30'],
+    usage: ['cve_monitor.py openssh --days 30'],
     path: `${PYTHON_BASE}/cve_monitor.py`,
   },
 ]

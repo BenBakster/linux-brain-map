@@ -27,7 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Typography } from '@/components/ui/typography'
 import { HYGIENE_ITEMS } from '@/data/hygiene'
 import { MODULES, getModule } from '@/data/modules'
-import { PYTHON_SCRIPTS, TOOLKIT_SCRIPTS } from '@/data/toolkit'
+import { PYTHON_SCRIPTS, TOOLKIT_SCRIPTS, bashCmd, pythonCmd } from '@/data/toolkit'
 import {
   getCompletionPercent,
   getHygieneChecked,
@@ -42,9 +42,6 @@ const navLinkClass = cn(
   buttonVariants({ variant: 'ghost', size: 'sm' }),
   'text-muted-foreground data-[status=active]:bg-accent/25 data-[status=active]:text-[oklch(0.92_0.06_80)] data-[status=active]:shadow-[0_0_10px_oklch(0.72_0.17_48/0.2)]',
 )
-
-const TOOLKIT_DIR =
-  'bash-security-toolkit'
 
 export function RootLayout() {
   const moduleProgress = getCompletionPercent(MODULES.length)
@@ -172,7 +169,7 @@ export function ModulePage() {
   const prev = MODULES.find((m) => m.number === mod.number - 1)
   const next = MODULES.find((m) => m.number === mod.number + 1)
   const runCmd = mod.bashScript
-    ? `cd "${TOOLKIT_DIR}" && ./${mod.bashScript}`
+    ? bashCmd(`./${mod.bashScript}`)
     : mod.commands[0]
 
   return (
@@ -272,7 +269,8 @@ export function ModulePage() {
             <CardHeader>
               <CardTitle>Команды и скрипты</CardTitle>
               <CardDescription>
-                Скопируй в терминал. Скрипты лежат в bash-security-toolkit/
+                Скрипты запускаются локально в терминале после git clone. В браузере терминала нет.
+                Перейди в папку репозитория: <code>cd bash-security-toolkit</code> или <code>cd python-security</code>.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -291,9 +289,9 @@ export function ModulePage() {
               {mod.pythonScript && (
                 <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
                   <code className="flex-1 font-mono text-sm">
-                    python3 ../python-security/{mod.pythonScript}
+                    {pythonCmd(mod.pythonScript)}
                   </code>
-                  <CopyButton text={`python3 ../python-security/${mod.pythonScript}`} />
+                  <CopyButton text={pythonCmd(mod.pythonScript)} />
                 </div>
               )}
               <Button
@@ -341,7 +339,8 @@ export function ToolkitPage() {
         Bash & Python Toolkit
       </Typography>
       <Typography tone="muted" className="mb-8 max-w-2xl">
-        Скрипты из IT_Cybersecurity/bash-security-toolkit и python-security. Запускай в терминале.
+        Скрипты запускаются локально в терминале после <code>git clone</code>. В браузере терминала нет.
+        Скопируй команду, вставь в терминал внутри клона репозитория.
       </Typography>
 
       <div className="mb-10 grid gap-4">
@@ -362,10 +361,8 @@ export function ToolkitPage() {
               </div>
               {script.usage.map((u) => (
                 <div key={u} className="flex flex-wrap items-center gap-2 rounded bg-muted p-2">
-                  <code className="flex-1 font-mono text-sm">
-                    cd "{TOOLKIT_DIR}" && {u}
-                  </code>
-                  <CopyButton text={`cd "${TOOLKIT_DIR}" && ${u}`} />
+                  <code className="flex-1 font-mono text-sm">{bashCmd(u)}</code>
+                  <CopyButton text={bashCmd(u)} />
                 </div>
               ))}
             </CardContent>
@@ -383,8 +380,8 @@ export function ToolkitPage() {
             <CardContent className="grid gap-2">
               {script.usage.map((u) => (
                 <div key={u} className="flex flex-wrap items-center gap-2 rounded bg-muted p-2">
-                  <code className="flex-1 font-mono text-sm">{u}</code>
-                  <CopyButton text={u} />
+                  <code className="flex-1 font-mono text-sm">{pythonCmd(u)}</code>
+                  <CopyButton text={pythonCmd(u)} />
                 </div>
               ))}
             </CardContent>
