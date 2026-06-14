@@ -217,14 +217,32 @@ export function ModulePage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="scheme" className="grid gap-4">
+      <Tabs defaultValue={mod.explainer ? 'explainer' : 'scheme'} className="grid gap-4">
         <TabsList className="flex h-auto flex-wrap gap-1 border border-border/60 bg-muted/50 p-1">
+          {mod.explainer && <TabsTrigger value="explainer">Разбор</TabsTrigger>}
           <TabsTrigger value="scheme">Схема</TabsTrigger>
           <TabsTrigger value="table">Таблица</TabsTrigger>
           <TabsTrigger value="decisions">Решения</TabsTrigger>
           <TabsTrigger value="quiz">Квиз</TabsTrigger>
           <TabsTrigger value="practice">Практика</TabsTrigger>
         </TabsList>
+
+        {mod.explainer && (
+          <TabsContent value="explainer">
+            <Card>
+              <CardHeader>
+                <CardTitle>Разбор — почему это так работает</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3">
+                {mod.explainer.map((para) => (
+                  <Typography key={para.slice(0, 40)} tone="muted" className="leading-relaxed">
+                    {para}
+                  </Typography>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="scheme">
           <Card>
