@@ -1,5 +1,8 @@
 name: Deploy webapp to GitHub Pages
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 on:
   push:
     branches: [main]
@@ -40,7 +43,18 @@ jobs:
 
       - name: Add SPA fallback
         working-directory: linux-brain-map-app/webapp/dist
-        run: cp index.html 404.html
+        run: |
+          cp index.html 404.html
+          routes=(
+            toolkit hygiene ibm review map
+            module/architecture module/boot module/syscalls module/processes
+            module/scheduler module/memory module/sync module/ipc
+            module/filesystems module/block-io module/networking module/security
+          )
+          for route in "${routes[@]}"; do
+            mkdir -p "$route"
+            cp index.html "$route/index.html"
+          done
 
       - uses: actions/configure-pages@v5
 
