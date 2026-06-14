@@ -4,14 +4,23 @@ import type { QuizQuestion } from '@/data/modules'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { markModuleComplete, setQuizScore } from '@/lib/progress'
+import {
+  markIbmTopicComplete,
+  markModuleComplete,
+  setQuizScore,
+} from '@/lib/progress'
 
 type QuizPanelProps = {
   moduleId: string
   questions: QuizQuestion[]
+  completionTrack?: 'linux' | 'ibm'
 }
 
-export function QuizPanel({ moduleId, questions }: QuizPanelProps) {
+export function QuizPanel({
+  moduleId,
+  questions,
+  completionTrack = 'linux',
+}: QuizPanelProps) {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [submitted, setSubmitted] = useState(false)
 
@@ -23,7 +32,11 @@ export function QuizPanel({ moduleId, questions }: QuizPanelProps) {
     setSubmitted(true)
     setQuizScore(moduleId, score)
     if (score === questions.length) {
-      markModuleComplete(moduleId)
+      if (completionTrack === 'ibm') {
+        markIbmTopicComplete(moduleId)
+      } else {
+        markModuleComplete(moduleId)
+      }
     }
   }
 
@@ -79,7 +92,7 @@ export function QuizPanel({ moduleId, questions }: QuizPanelProps) {
         ) : (
           <p className="text-sm font-medium">
             Результат: {score}/{questions.length}
-            {score === questions.length && ' — модуль засчитан!'}
+            {score === questions.length && ' — тема засчитана!'}
           </p>
         )}
       </div>

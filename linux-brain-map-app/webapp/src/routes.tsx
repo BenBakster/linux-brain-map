@@ -1,9 +1,12 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 
 import {
+  BrainMapPage,
   DashboardPage,
   HygienePage,
+  IbmPage,
   ModulePage,
+  ReviewPage,
   RootLayout,
   ToolkitPage,
 } from './pages'
@@ -36,11 +39,32 @@ const hygieneRoute = createRoute({
   component: HygienePage,
 })
 
+const ibmRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/ibm',
+  component: IbmPage,
+})
+
+const reviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/review',
+  component: ReviewPage,
+})
+
+const brainMapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/map',
+  component: BrainMapPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   moduleRoute,
   toolkitRoute,
   hygieneRoute,
+  ibmRoute,
+  reviewRoute,
+  brainMapRoute,
 ])
 
 const basepath =

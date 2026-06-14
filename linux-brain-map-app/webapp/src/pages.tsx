@@ -25,17 +25,29 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Typography } from '@/components/ui/typography'
+import { BRAIN_EDGES, BRAIN_NODES } from '@/data/brain-map'
 import { HYGIENE_ITEMS } from '@/data/hygiene'
+import { ATTACK_TACTICS, IBM_TOPICS, KILL_CHAIN } from '@/data/ibm'
 import { MODULES, getModule } from '@/data/modules'
+import { REVIEW_CARDS, type ReviewTrack } from '@/data/review'
 import { PYTHON_SCRIPTS, TOOLKIT_SCRIPTS, bashCmd, pythonCmd } from '@/data/toolkit'
 import {
   getCompletionPercent,
   getHygieneChecked,
   getHygienePercent,
+  getIbmCompletionPercent,
+  getProgress,
   isModuleComplete,
   markModuleComplete,
   toggleHygieneItem,
 } from '@/lib/progress'
+import {
+  getDueCards,
+  getReviewState,
+  getReviewStats,
+  rateCard,
+  type ReviewRating,
+} from '@/lib/review'
 import { cn } from '@/lib/utils'
 
 const navLinkClass = cn(
@@ -45,6 +57,7 @@ const navLinkClass = cn(
 
 export function RootLayout() {
   const moduleProgress = getCompletionPercent(MODULES.length)
+  const ibmProgress = getIbmCompletionPercent(IBM_TOPICS.length)
   const hygieneProgress = getHygienePercent(HYGIENE_ITEMS.length)
 
   return (
@@ -70,13 +83,25 @@ export function RootLayout() {
             <Link to="/hygiene" className={navLinkClass}>
               Hygiene
             </Link>
+            <Link to="/ibm" className={navLinkClass}>
+              IBM Cyber
+            </Link>
+            <Link to="/review" className={navLinkClass}>
+              Повторение
+            </Link>
+            <Link to="/map" className={navLinkClass}>
+              Brain Map
+            </Link>
           </nav>
 
-          <div className="hidden w-48 lg:block">
+          <div className="hidden w-40 xl:block">
             <ProgressBar value={moduleProgress} label="Кетов" />
           </div>
+          <div className="hidden w-40 xl:block">
+            <ProgressBar value={ibmProgress} label="IBM" />
+          </div>
           <Badge variant="outline" className="lg:hidden">
-            {moduleProgress}% · {hygieneProgress}% H
+            {moduleProgress}% L · {ibmProgress}% IBM · {hygieneProgress}% H
           </Badge>
         </div>
       </header>
@@ -449,6 +474,536 @@ export function HygienePage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+    </section>
+  )
+}
+
+export function IbmPage() {
+  const asset = (path: string) => `${import.meta.env.BASE_URL}ibm/${path}`
+  const ibmProgress = getIbmCompletionPercent(IBM_TOPICS.length)
+  const completedTopics = getProgress().completedIbmTopics.length
+
+  return (
+    <section className="mx-auto w-full max-w-7xl px-4 py-8">
+      <div className="mb-8 grid gap-4">
+        <Badge
+          variant="outline"
+          className="w-fit border-accent/60 bg-accent/15 text-[oklch(0.9_0.08_80)]"
+        >
+          IBM Cybersecurity · материалы из локального архива
+        </Badge>
+        <Typography variant="h1" className="psy-title max-w-4xl text-3xl font-bold sm:text-4xl">
+          Основы ИБ: от CIA и доступа до форензики и цепочки атаки
+        </Typography>
+        <Typography tone="muted" className="max-w-3xl">
+          Содержание извлечено из скриншотов курса и переработано в атомарные
+          конспекты. Всё запечено в приложение: без LLM, сетевых запросов и ключей
+          в рантайме.
+        </Typography>
+        <div className="max-w-xl">
+          <ProgressBar
+            value={ibmProgress}
+            label={`Пройдено тем: ${completedTopics}/${IBM_TOPICS.length}`}
+          />
+        </div>
+      </div>
+
+      <Tabs defaultValue="topics" className="grid gap-5">
+        <TabsList className="flex h-auto flex-wrap gap-1 border border-border/60 bg-muted/50 p-1">
+          <TabsTrigger value="topics">Темы</TabsTrigger>
+          <TabsTrigger value="kill-chain">Kill Chain</TabsTrigger>
+          <TabsTrigger value="attack">ATT&amp;CK</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="topics" className="grid gap-5">
+          {IBM_TOPICS.map((topic) => (
+            <Card key={topic.id} className="border-border/80 bg-card/90">
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge variant="secondary">
+                    {String(topic.number).padStart(2, '0')}
+                  </Badge>
+                  <Badge variant="outline" className="psy-mnemonic font-mono">
+                    {topic.mnemonic}
+                  </Badge>
+                </div>
+                <CardTitle className="mt-2">{topic.title}</CardTitle>
+                <CardDescription>{topic.summary}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="concepts">
+                  <TabsList className="mb-4 flex h-auto flex-wrap">
+                    <TabsTrigger value="concepts">Понятия</TabsTrigger>
+                    <TabsTrigger value="takeaways">Выводы</TabsTrigger>
+                    <TabsTrigger value="quiz">Квиз</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="concepts" className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Понятие</TableHead>
+                          <TableHead>Смысл</TableHead>
+                          <TableHead>Практический ориентир</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {topic.concepts.map((concept) => (
+                          <TableRow key={concept.term}>
+                            <TableCell className="font-medium">
+                              {concept.term}
+                            </TableCell>
+                            <TableCell>{concept.meaning}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {concept.signal}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TabsContent>
+                  <TabsContent value="takeaways" className="grid gap-3">
+                    {topic.takeaways.map((takeaway, index) => (
+                      <div key={takeaway} className="flex gap-3 rounded-lg border p-3">
+                        <Badge variant="secondary">{index + 1}</Badge>
+                        <p className="text-sm">{takeaway}</p>
+                      </div>
+                    ))}
+                  </TabsContent>
+                  <TabsContent value="quiz">
+                    <QuizPanel
+                      moduleId={topic.id}
+                      questions={topic.quiz}
+                      completionTrack="ibm"
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="kill-chain">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cyber Kill Chain: 7 этапов и точки защиты</CardTitle>
+              <CardDescription>
+                Линейная модель помогает спросить: где обнаружить или прервать
+                конкретную атаку?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6">
+              <div className="grid gap-3 lg:grid-cols-2">
+                {KILL_CHAIN.map((item, index) => (
+                  <div key={item.stage} className="psy-highlight-card rounded-lg p-4">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <Badge>{index + 1}</Badge>
+                      <strong>{item.ru}</strong>
+                      <span className="text-sm text-muted-foreground">
+                        / {item.stage}
+                      </span>
+                    </div>
+                    <p className="text-sm">{item.detail}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      <strong>Защита:</strong> {item.defense}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <a href={asset('cyber-kill-chain.webp')} target="_blank" rel="noreferrer">
+                <img
+                  src={asset('cyber-kill-chain.webp')}
+                  alt="Cyber Kill Chain из семи этапов"
+                  className="max-h-[52rem] w-full rounded-lg border bg-white object-contain"
+                />
+              </a>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="attack">
+          <Card>
+            <CardHeader>
+              <CardTitle>MITRE ATT&amp;CK: тактики как цели атакующего</CardTitle>
+              <CardDescription>
+                Kill Chain показывает ход одной операции, ATT&amp;CK каталогизирует
+                наблюдаемое поведение по тактикам и техникам.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {ATTACK_TACTICS.map((tactic, index) => (
+                  <div key={tactic} className="rounded-lg border bg-muted/40 p-3">
+                    <span className="mr-2 font-mono text-primary">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="text-sm font-medium">{tactic}</span>
+                  </div>
+                ))}
+              </div>
+              <Typography tone="muted">
+                Схема из архива является историческим снимком матрицы. Для
+                операционной работы перечень техник нужно сверять с актуальной
+                MITRE ATT&amp;CK, но базовая логика тактик остаётся полезной для
+                обучения и threat modeling.
+              </Typography>
+              <a href={asset('attack-matrix.webp')} target="_blank" rel="noreferrer">
+                <img
+                  src={asset('attack-matrix.webp')}
+                  alt="Матрица MITRE ATT&CK Enterprise"
+                  className="w-full rounded-lg border bg-white object-contain"
+                />
+              </a>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </section>
+  )
+}
+
+type ReviewDirection = 'forward' | 'reverse'
+
+export function ReviewPage() {
+  const [track, setTrack] = useState<ReviewTrack | 'all'>('all')
+  const [direction, setDirection] = useState<ReviewDirection>('forward')
+  const [revealed, setRevealed] = useState(false)
+  const [, setRevision] = useState(0)
+
+  const dueCards = getDueCards(REVIEW_CARDS, track).slice(0, 20)
+  const card = dueCards[0]
+  const stats = getReviewStats(REVIEW_CARDS)
+  const state = card ? getReviewState(card.id) : undefined
+
+  function handleRate(rating: ReviewRating) {
+    if (!card) return
+    rateCard(card.id, rating)
+    setRevealed(false)
+    setRevision((value) => value + 1)
+  }
+
+  return (
+    <section className="mx-auto w-full max-w-4xl px-4 py-8">
+      <div className="mb-8 grid gap-4">
+        <Badge variant="outline" className="w-fit">
+          Локальный FSRS-inspired планировщик
+        </Badge>
+        <Typography variant="h1" className="psy-title text-3xl font-bold">
+          Интервальное повторение
+        </Typography>
+        <Typography tone="muted">
+          Карточки строятся из учебных таблиц. Оценка ответа меняет дату следующего
+          показа; история хранится только в этом браузере.
+        </Typography>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Card size="sm">
+            <CardContent>
+              <strong>{stats.due}</strong>
+              <p className="text-sm text-muted-foreground">готово к повторению</p>
+            </CardContent>
+          </Card>
+          <Card size="sm">
+            <CardContent>
+              <strong>{stats.learned}</strong>
+              <p className="text-sm text-muted-foreground">уже просмотрено</p>
+            </CardContent>
+          </Card>
+          <Card size="sm">
+            <CardContent>
+              <strong>{stats.total}</strong>
+              <p className="text-sm text-muted-foreground">всего карточек</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        {(['all', 'linux', 'ibm'] as const).map((value) => (
+          <Button
+            key={value}
+            type="button"
+            variant={track === value ? 'default' : 'outline'}
+            onClick={() => {
+              setTrack(value)
+              setRevealed(false)
+            }}
+          >
+            {value === 'all' ? 'Все' : value === 'linux' ? 'Linux' : 'IBM'}
+          </Button>
+        ))}
+        <Button
+          type="button"
+          variant={direction === 'forward' ? 'secondary' : 'outline'}
+          onClick={() => {
+            setDirection('forward')
+            setRevealed(false)
+          }}
+        >
+          Понятие → ответ
+        </Button>
+        <Button
+          type="button"
+          variant={direction === 'reverse' ? 'secondary' : 'outline'}
+          onClick={() => {
+            setDirection('reverse')
+            setRevealed(false)
+          }}
+        >
+          Сигнал → понятие
+        </Button>
+      </div>
+
+      {card ? (
+        <Card className="psy-highlight-card">
+          <CardHeader>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge>{card.track.toUpperCase()}</Badge>
+              <Badge variant="outline">{card.topic}</Badge>
+              {state && (
+                <Badge variant="secondary">
+                  S {state.stability} · D {state.difficulty}
+                </Badge>
+              )}
+            </div>
+            <CardTitle className="pt-4 text-2xl">
+              {direction === 'forward' ? card.prompt : card.cue}
+            </CardTitle>
+            {direction === 'forward' && (
+              <CardDescription>{card.cue}</CardDescription>
+            )}
+          </CardHeader>
+          <CardContent className="grid gap-5">
+            {!revealed ? (
+              <Button type="button" onClick={() => setRevealed(true)}>
+                Показать ответ
+              </Button>
+            ) : (
+              <>
+                <div className="rounded-lg border bg-muted/40 p-4">
+                  <Typography variant="h5">
+                    {direction === 'forward' ? card.answer : card.prompt}
+                  </Typography>
+                  {direction === 'reverse' && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {card.answer}
+                    </p>
+                  )}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-4">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => handleRate('again')}
+                  >
+                    Снова
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleRate('hard')}
+                  >
+                    Трудно
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => handleRate('good')}
+                  >
+                    Хорошо
+                  </Button>
+                  <Button type="button" onClick={() => handleRate('easy')}>
+                    Легко
+                  </Button>
+                </div>
+              </>
+            )}
+            <p className="text-sm text-muted-foreground">
+              В очереди сегодня: {dueCards.length}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Очередь пуста</CardTitle>
+            <CardDescription>
+              Для выбранной колоды нет карточек, срок которых уже наступил.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+    </section>
+  )
+}
+
+const BRAIN_POSITIONS = new Map<string, { x: number; y: number }>(
+  BRAIN_NODES.map((node) => {
+    const peers = BRAIN_NODES.filter((item) => item.kind === node.kind)
+    const index = peers.findIndex((item) => item.id === node.id)
+    if (node.kind === 'linux') {
+      return [
+        node.id,
+        {
+          x: index < 6 ? 110 : 300,
+          y: 75 + (index % 6) * 105,
+        },
+      ] as const
+    }
+    if (node.kind === 'ibm') {
+      return [node.id, { x: 520, y: 75 + index * 105 }] as const
+    }
+    return [node.id, { x: 760, y: 245 + index * 210 }] as const
+  }),
+)
+
+export function BrainMapPage() {
+  const [selectedId, setSelectedId] = useState('security')
+  const selected = BRAIN_NODES.find((node) => node.id === selectedId)!
+  const connectedEdges = BRAIN_EDGES.filter(
+    (edge) => edge.from === selectedId || edge.to === selectedId,
+  )
+  const connectedIds = new Set(
+    connectedEdges.flatMap((edge) => [edge.from, edge.to]),
+  )
+  const selectedHref = `${import.meta.env.BASE_URL}${selected.href.replace(/^\//, '')}`
+
+  return (
+    <section className="mx-auto w-full max-w-7xl px-4 py-8">
+      <div className="mb-8 grid gap-3">
+        <Badge variant="outline" className="w-fit">
+          Linux ↔ IBM ↔ модели угроз
+        </Badge>
+        <Typography variant="h1" className="psy-title text-3xl font-bold">
+          Интерактивная Brain Map
+        </Typography>
+        <Typography tone="muted" className="max-w-3xl">
+          Выбери узел: карта оставит активными его связи и объяснит тип каждого
+          ребра. Это навигационная модель курса, а не просто иллюстрация.
+        </Typography>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <Card className="overflow-hidden">
+          <CardContent className="p-2 sm:p-4">
+            <div className="overflow-x-auto">
+              <svg
+                viewBox="0 0 880 700"
+                className="min-w-[760px]"
+                role="img"
+                aria-label="Карта связей Linux и информационной безопасности"
+              >
+                <text x="110" y="28" textAnchor="middle" className="fill-current text-sm font-bold">
+                  Linux
+                </text>
+                <text x="520" y="28" textAnchor="middle" className="fill-current text-sm font-bold">
+                  IBM Cyber
+                </text>
+                <text x="760" y="198" textAnchor="middle" className="fill-current text-sm font-bold">
+                  Models
+                </text>
+
+                {BRAIN_EDGES.map((edge) => {
+                  const from = BRAIN_POSITIONS.get(edge.from)!
+                  const to = BRAIN_POSITIONS.get(edge.to)!
+                  const active =
+                    edge.from === selectedId || edge.to === selectedId
+                  return (
+                    <line
+                      key={`${edge.from}-${edge.to}`}
+                      x1={from.x}
+                      y1={from.y}
+                      x2={to.x}
+                      y2={to.y}
+                      stroke={active ? 'oklch(0.78 0.15 52)' : 'oklch(0.45 0.08 42)'}
+                      strokeWidth={active ? 3 : 1}
+                      opacity={active ? 0.95 : 0.32}
+                    />
+                  )
+                })}
+
+                {BRAIN_NODES.map((node) => {
+                  const position = BRAIN_POSITIONS.get(node.id)!
+                  const selectedNode = node.id === selectedId
+                  const active = selectedNode || connectedIds.has(node.id)
+                  const fill =
+                    node.kind === 'linux'
+                      ? 'oklch(0.58 0.14 35)'
+                      : node.kind === 'ibm'
+                        ? 'oklch(0.55 0.12 145)'
+                        : 'oklch(0.52 0.16 328)'
+                  return (
+                    <g
+                      key={node.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={node.label}
+                      onClick={() => setSelectedId(node.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          setSelectedId(node.id)
+                        }
+                      }}
+                      className="cursor-pointer outline-none"
+                      opacity={active ? 1 : 0.42}
+                    >
+                      <circle
+                        cx={position.x}
+                        cy={position.y}
+                        r={selectedNode ? 42 : 35}
+                        fill={fill}
+                        stroke={selectedNode ? 'oklch(0.92 0.08 80)' : 'oklch(0.75 0.08 70)'}
+                        strokeWidth={selectedNode ? 4 : 1.5}
+                      />
+                      <text
+                        x={position.x}
+                        y={position.y + 4}
+                        textAnchor="middle"
+                        className="pointer-events-none fill-white text-[10px] font-bold"
+                      >
+                        {node.label.length > 15
+                          ? `${node.label.slice(0, 14)}…`
+                          : node.label}
+                      </text>
+                    </g>
+                  )
+                })}
+              </svg>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="h-fit">
+          <CardHeader>
+            <div className="flex gap-2">
+              <Badge>{selected.kind.toUpperCase()}</Badge>
+              <Badge variant="outline">{connectedEdges.length} связей</Badge>
+            </div>
+            <CardTitle>{selected.label}</CardTitle>
+            <CardDescription>{selected.summary}</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {connectedEdges.map((edge) => {
+              const otherId = edge.from === selectedId ? edge.to : edge.from
+              const other = BRAIN_NODES.find((node) => node.id === otherId)!
+              return (
+                <button
+                  key={`${edge.from}-${edge.to}`}
+                  type="button"
+                  onClick={() => setSelectedId(otherId)}
+                  className="rounded-lg border p-3 text-left hover:bg-muted/50"
+                >
+                  <strong className="text-sm">{other.label}</strong>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {edge.relation}
+                  </p>
+                </button>
+              )
+            })}
+            <Button asChild>
+              <a href={selectedHref}>Открыть учебный раздел</a>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </section>
   )
