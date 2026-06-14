@@ -19,7 +19,7 @@ flowchart TB
 | Параметр | Диапазон | Команда | Эффект |
 |----------|----------|---------|--------|
 | nice | -20 (высший) … 19 (низший) | `nice -n 10 cmd` | вес CPU |
-| priority | 0–139 | `ps -eo pid,ni,pri,cmd` | ниже = важнее |
+| priority | 0–139 (внутр. ядра) | `ps -eo pid,ni,pri,cmd` | в столбце `pri` больше = важнее (инверсия внутр. шкалы) |
 | policy | SCHED_OTHER/FIFO/RR | `chrt -p PID` | RT вытесняет CFS |
 | cgroup CPU | quota/period | `cat /sys/fs/cgroup/.../cpu.max` | лимит в Docker |
 

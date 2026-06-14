@@ -99,7 +99,7 @@ done
 crontab -l 2>/dev/null || info "Нет user crontab"
 
 # --- systemd failed ---
-section "Сервисы systemd (модуль 02: BGKIS)"
+section "Сервисы systemd (модуль 02: UGKIS)"
 if command -v systemctl &>/dev/null; then
     failed=$(systemctl --failed --no-pager 2>/dev/null | grep -c failed || echo 0)
     if [[ "$failed" -gt 1 ]]; then

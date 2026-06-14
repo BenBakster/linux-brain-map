@@ -18,7 +18,7 @@ flowchart LR
 | Уровень | Содержимое | Команда | Аномалия |
 |---------|------------|---------|----------|
 | VFS | open/read/write для всех FS | `cat /proc/mounts` | remount ro |
-| Dentry | кэш имён каталогов | `slabinfo` (dentry) | — |
+| Dentry | кэш имён каталогов | `/proc/slabinfo` (dentry), `slabtop` | — |
 | Inode | права, размер, блоки | `ls -i`, `stat` | inode exhaustion |
 | Superblock | метаданные ФС | `dumpe2fs` | corrupt FS |
 | Journal | журнал транзакций | `tune2fs -l` | — |

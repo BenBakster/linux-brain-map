@@ -30,7 +30,7 @@ flowchart TB
 Диск тормозит?
 ├── iowait высокий? → iostat -x 1
 ├── Кто пишет? → iotop -o
-├── Очередь переполнена? → cat /sys/block/*/queue/nr_requests
+├── Очередь переполнена? → iostat -x 1 (aqu-sz) или cat /sys/block/*/inflight
 └── Диск умирает? → smartctl -H /dev/sdX
 ```
 

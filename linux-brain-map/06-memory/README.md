@@ -36,7 +36,7 @@ flowchart TD
 ```
 Память заканчивается?
 ├── Кто жрёт? → ps aux --sort=-%mem | head
-├── Утечка? → watch -n1 cat /proc/PID/status | grep VmRSS
+├── Утечка? → watch -n1 'grep VmRSS /proc/PID/status'
 ├── Swap активен? → vmstat 1 (si/so > 0)
 └── OOM в логах? → dmesg | grep -i oom
 ```

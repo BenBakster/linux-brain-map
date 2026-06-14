@@ -1,6 +1,6 @@
 # 02 — Загрузка системы
 
-**Мнемоника: BGKIS** — *Bootloader → GRUB → Kernel → Init → systemd*
+**Мнемоника: UGKIS** — *UEFI → GRUB → Kernel → initramfs → systemd*
 
 ## Схема загрузки
 
@@ -25,9 +25,9 @@ sequenceDiagram
 | Этап | Что происходит | Где смотреть | Типичная ошибка |
 |------|----------------|--------------|-----------------|
 | Firmware | POST, выбор диска | BIOS/UEFI setup | неверный boot order |
-| GRUB | меню, параметры ядра | `/boot/grub/`, `grub.cfg` | kernel panic |
+| GRUB | меню, параметры ядра | `/boot/grub/`, `grub.cfg` | grub rescue> / нет меню |
 | Kernel | драйверы, mount root | `dmesg`, `journalctl -b` | не найден root |
-| initramfs | crypto, LVM, NFS root | `lsinitramfs`, `dracut` | не открыт LUKS |
+| initramfs | crypto, LVM, NFS root | `lsinitrd` (dracut) / `lsinitramfs` (Debian) / `lsinitcpio` (Arch) | не открыт LUKS |
 | systemd | unit-файлы, targets | `systemctl list-units` | зависший сервис |
 
 ## Дерево решений

@@ -7,7 +7,7 @@
 | # | Модуль | Мнемоника | Bash | Python | Hygiene |
 |---|--------|-----------|------|--------|---------|
 | 01 | [Архитектура](01-architecture/README.md) | **KUPU** | `user_audit.sh` | — | checklist §1 |
-| 02 | [Загрузка](02-boot/README.md) | **BGKIS** | `user_audit.sh` | — | checklist §2 |
+| 02 | [Загрузка](02-boot/README.md) | **UGKIS** | `user_audit.sh` | — | checklist §2 |
 | 03 | [Системные вызовы](03-syscalls/README.md) | **UKU** | `user_audit.sh` | `log_anomaly.py` | — |
 | 04 | [Процессы](04-processes/README.md) | **FET** | `user_audit.sh` | `log_anomaly.py` | checklist §3 |
 | 05 | [Планировщик](05-scheduler/README.md) | **CFS** | `user_audit.sh` | `log_anomaly.py` | — |
@@ -22,7 +22,7 @@
 ## Мнемоники одной строкой
 
 - **KUPU** — Kernel, Userspace, Processes, Users
-- **BGKIS** — Bootloader → GRUB → Kernel → Init → systemd
+- **UGKIS** — UEFI → GRUB → Kernel → initramfs → systemd
 - **UKU** — User → Kernel → User (syscall)
 - **FET** — Fork, Exec, Terminate
 - **VPS** — Virtual memory, Paging, Swap

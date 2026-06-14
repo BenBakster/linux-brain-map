@@ -7,8 +7,8 @@
 ```mermaid
 flowchart TB
     APP[Приложения] --> LIBC[glibc / libc]
-    LIBC --> SHELL[Shell: bash]
-    SHELL --> SYSCALL[Системные вызовы]
+    SHELL[Shell: bash] --> LIBC
+    LIBC --> SYSCALL[Системные вызовы]
     SYSCALL --> KERNEL[Ядро Linux]
     KERNEL --> HW[Железо: CPU RAM Disk NIC]
     KERNEL --> DRV[Драйверы устройств]
