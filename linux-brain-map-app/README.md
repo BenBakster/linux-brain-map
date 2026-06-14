@@ -1,6 +1,7 @@
 # Linux Brain Map
 
-Статическое SPA для изучения Linux по Кетову: мнемосхемы, таблицы, квизы, bash/python toolkit, cyber hygiene.
+Статическое SPA для изучения Linux по Кетову и основ IBM Cybersecurity:
+мнемосхемы, таблицы, квизы, bash/python toolkit, cyber hygiene, Kill Chain и ATT&CK.
 
 Деплой: **GitHub Pages** → https://benbakster.github.io/linux-brain-map/
 
@@ -34,6 +35,9 @@ linux-brain-map-app/
 | Модуль | `/module/architecture` | схема → таблица → квиз → практика |
 | Toolkit | `/toolkit` | bash + python скрипты с кнопкой копирования |
 | Hygiene | `/hygiene` | чеклист с прогрессом |
+| IBM Cyber | `/ibm` | CIA, IAM, incident response, криптография, форензика, Kill Chain и ATT&CK |
+| Повторение | `/review` | прямые/reverse-карточки с локальным интервальным планировщиком |
+| Brain Map | `/map` | интерактивные связи Linux, IBM, Kill Chain и ATT&CK |
 
 Прогресс сохраняется в `localStorage` браузера.
 

@@ -3,16 +3,28 @@ const HYGIENE_KEY = 'linux-brain-map-hygiene'
 
 export type ProgressState = {
   completedModules: string[]
+  completedIbmTopics: string[]
   quizScores: Record<string, number>
+}
+
+const EMPTY_PROGRESS: ProgressState = {
+  completedModules: [],
+  completedIbmTopics: [],
+  quizScores: {},
 }
 
 function readProgress(): ProgressState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { completedModules: [], quizScores: {} }
-    return JSON.parse(raw) as ProgressState
+    if (!raw) return { ...EMPTY_PROGRESS }
+    const stored = JSON.parse(raw) as Partial<ProgressState>
+    return {
+      completedModules: stored.completedModules ?? [],
+      completedIbmTopics: stored.completedIbmTopics ?? [],
+      quizScores: stored.quizScores ?? {},
+    }
   } catch {
-    return { completedModules: [], quizScores: {} }
+    return { ...EMPTY_PROGRESS }
   }
 }
 
@@ -32,6 +44,14 @@ export function markModuleComplete(moduleId: string) {
   }
 }
 
+export function markIbmTopicComplete(topicId: string) {
+  const state = readProgress()
+  if (!state.completedIbmTopics.includes(topicId)) {
+    state.completedIbmTopics.push(topicId)
+    writeProgress(state)
+  }
+}
+
 export function setQuizScore(moduleId: string, score: number) {
   const state = readProgress()
   const prev = state.quizScores[moduleId] ?? 0
@@ -46,8 +66,17 @@ export function getCompletionPercent(totalModules: number): number {
   return Math.round((completedModules.length / totalModules) * 100)
 }
 
+export function getIbmCompletionPercent(totalTopics: number): number {
+  const { completedIbmTopics } = readProgress()
+  return Math.round((completedIbmTopics.length / totalTopics) * 100)
+}
+
 export function isModuleComplete(moduleId: string): boolean {
   return readProgress().completedModules.includes(moduleId)
+}
+
+export function isIbmTopicComplete(topicId: string): boolean {
+  return readProgress().completedIbmTopics.includes(topicId)
 }
 
 // Hygiene checklist
