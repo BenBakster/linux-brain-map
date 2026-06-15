@@ -1056,12 +1056,25 @@ export function GlossaryPage() {
   const catAnchor = (category: string) => `cat-${GLOSSARY_CATEGORIES.indexOf(category)}`
   const shown = filtered.reduce((n, g) => n + g.terms.length, 0)
 
-  // Scroll to the term anchor when arriving from a module link (/glossary#term-id).
+  // Scroll to the term anchor on arrival from a module link (/glossary#term-id) and on
+  // later in-page hash changes. rAF lets the list paint before we measure; decode is guarded.
   useEffect(() => {
-    const id = decodeURIComponent(window.location.hash.replace(/^#/, ''))
-    if (!id) return
-    const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ block: 'start' })
+    const scrollToHash = () => {
+      let id = ''
+      try {
+        id = decodeURIComponent(window.location.hash.replace(/^#/, ''))
+      } catch {
+        return
+      }
+      if (!id) return
+      requestAnimationFrame(() => {
+        const el = document.getElementById(id)
+        if (el) el.scrollIntoView({ block: 'start' })
+      })
+    }
+    scrollToHash()
+    window.addEventListener('hashchange', scrollToHash)
+    return () => window.removeEventListener('hashchange', scrollToHash)
   }, [])
 
   return (
@@ -1118,8 +1131,8 @@ export function GlossaryPage() {
                     <CardDescription>{t.short}</CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-3">
-                    {t.body.map((para) => (
-                      <Typography key={para.slice(0, 40)} tone="muted" className="leading-relaxed">
+                    {t.body.map((para, idx) => (
+                      <Typography key={`${t.id}-p${idx}`} tone="muted" className="leading-relaxed">
                         {para}
                       </Typography>
                     ))}
