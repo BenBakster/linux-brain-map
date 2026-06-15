@@ -1,8 +1,9 @@
 import { Link, Outlet, useParams } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { CopyButton } from '@/components/CopyButton'
 import { FlowDiagram } from '@/components/FlowDiagram'
+import { linkifyProse } from '@/components/GlossaryLinker'
 import { ProgressBar } from '@/components/ProgressBar'
 import { QuizPanel } from '@/components/QuizPanel'
 import { Badge } from '@/components/ui/badge'
@@ -200,6 +201,7 @@ export function ModulePage() {
   const runCmd = mod.bashScript
     ? bashCmd(`./${mod.bashScript}`)
     : mod.commands[0]
+  const explainerSeen = new Set<string>()
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6">
@@ -240,7 +242,7 @@ export function ModulePage() {
               <CardContent className="grid gap-3">
                 {mod.explainer.map((para) => (
                   <Typography key={para.slice(0, 40)} tone="muted" className="leading-relaxed">
-                    {para}
+                    {linkifyProse(para, explainerSeen)}
                   </Typography>
                 ))}
               </CardContent>
@@ -1053,6 +1055,14 @@ export function GlossaryPage() {
 
   const catAnchor = (category: string) => `cat-${GLOSSARY_CATEGORIES.indexOf(category)}`
   const shown = filtered.reduce((n, g) => n + g.terms.length, 0)
+
+  // Scroll to the term anchor when arriving from a module link (/glossary#term-id).
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.replace(/^#/, ''))
+    if (!id) return
+    const el = document.getElementById(id)
+    if (el) el.scrollIntoView({ block: 'start' })
+  }, [])
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-8">
