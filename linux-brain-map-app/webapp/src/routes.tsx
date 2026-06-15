@@ -3,6 +3,7 @@ import { createRootRoute, createRoute, createRouter } from '@tanstack/react-rout
 import {
   BrainMapPage,
   DashboardPage,
+  GlossaryPage,
   HygienePage,
   IbmPage,
   ModulePage,
@@ -57,6 +58,12 @@ const brainMapRoute = createRoute({
   component: BrainMapPage,
 })
 
+const glossaryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/glossary',
+  component: GlossaryPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   moduleRoute,
@@ -65,6 +72,7 @@ const routeTree = rootRoute.addChildren([
   ibmRoute,
   reviewRoute,
   brainMapRoute,
+  glossaryRoute,
 ])
 
 const basepath =
