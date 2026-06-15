@@ -9,6 +9,7 @@ import {
   ModulePage,
   ReviewPage,
   RootLayout,
+  TimelinePage,
   ToolkitPage,
 } from './pages'
 
@@ -64,6 +65,12 @@ const glossaryRoute = createRoute({
   component: GlossaryPage,
 })
 
+const timelineRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/timeline',
+  component: TimelinePage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   moduleRoute,
@@ -73,6 +80,7 @@ const routeTree = rootRoute.addChildren([
   reviewRoute,
   brainMapRoute,
   glossaryRoute,
+  timelineRoute,
 ])
 
 const basepath =
