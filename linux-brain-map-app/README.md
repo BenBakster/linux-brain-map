@@ -38,6 +38,8 @@ linux-brain-map-app/
 | IBM Cyber | `/ibm` | CIA, IAM, incident response, криптография, форензика, Kill Chain и ATT&CK |
 | Повторение | `/review` | прямые/reverse-карточки с локальным интервальным планировщиком |
 | Brain Map | `/map` | интерактивные связи Linux, IBM, Kill Chain и ATT&CK |
+| Глоссарий | `/glossary` | 82 термина ядра по категориям, поиск, бэклинки в модули |
+| Хронология | `/timeline` | история Unix → Linux: 50 событий по эпохам с кросс-ссылками |
 
 Прогресс сохраняется в `localStorage` браузера.
 
