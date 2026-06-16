@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter } from '@tanstack/react-rout
 
 import {
   BrainMapPage,
+  ComparePage,
   DashboardPage,
   GlossaryPage,
   HygienePage,
@@ -71,6 +72,12 @@ const timelineRoute = createRoute({
   component: TimelinePage,
 })
 
+const compareRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/compare',
+  component: ComparePage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   moduleRoute,
@@ -81,6 +88,7 @@ const routeTree = rootRoute.addChildren([
   brainMapRoute,
   glossaryRoute,
   timelineRoute,
+  compareRoute,
 ])
 
 const basepath =
