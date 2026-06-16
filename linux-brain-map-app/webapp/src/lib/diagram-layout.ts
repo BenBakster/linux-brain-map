@@ -6,15 +6,32 @@
 
 import type { Diagram, DiagramEdge, DiagramNode } from '@/data/diagram'
 
-export const NODE_W = 172
-export const NODE_H = 78
+export const NODE_W = 184
 export const COL_GAP = 60
 export const ROW_GAP = 40
 export const PAD = 28
 export const LANE_GUTTER = 104 // место слева под подписи дорожек
 export const INTRA_GAP = 16 // зазор при стопке узлов в одной ячейке дорожки
+export const MIN_NODE_H = 76 // пол высоты узла: короткие узлы остаются «коробкой»
+export const MAX_NODE_H = 132 // потолок: антибомба на гигантский detail
 const COL_PITCH = NODE_W + COL_GAP
-const ROW_PITCH = NODE_H + ROW_GAP
+
+// Аналитическая оценка высоты узла под его текст — без DOM-замеров, чтобы
+// раскладка оставалась чистой и юнит-тестируемой. Значения в px при корневом
+// font-size 16px и ДОЛЖНЫ соответствовать размерам шрифта в index.css
+// (.psy-dnode-label / .psy-dnode-detail). Биас намеренно вверх: лучше
+// переоценить высоту (лишний воздух), чем недооценить и обрезать текст.
+const PAD_X = 8 // padding-inline узла (0.5rem)
+const PAD_Y = 5.6 // padding-block узла (0.35rem)
+const LINE_H = 1.12 // line-height текстов узла
+const LABEL_PX = 14.4 // .psy-dnode-label (0.9rem)
+const DATA_LABEL_PX = 13.12 // моноширинная метка data-узла (0.82rem)
+const DETAIL_PX = 11.52 // .psy-dnode-detail (0.72rem)
+const DETAIL_MARGIN = 2.4 // margin-top detail (0.15rem)
+const K_LABEL = 0.6 // средняя ширина глифа / кегль (кириллица, пропорциональный)
+const K_MONO = 0.62 // то же для моноширинной метки data-узла
+const K_DETAIL = 0.55 // то же для detail
+const SLACK = 8 // запас на округления оценки
 
 export type PositionedNode = DiagramNode & {
   col: number
@@ -64,6 +81,33 @@ export function computeColumns(nodes: DiagramNode[], edges: DiagramEdge[]): Map<
   return col
 }
 
+/**
+ * Высота узла под его текст (label + опциональный detail). Чистая аналитика:
+ * длина строки → число строк по средней ширине глифа → пиксели. Без DOM, без
+ * шрифтовых замеров — детерминирована и тестируема. Зажата в [MIN, MAX], где
+ * MAX страхует от аномально длинного detail (его хвост дочистит overflow:hidden
+ * в CSS, а полный текст всегда доступен в title-тултипе).
+ */
+export function estimateNodeHeight(n: DiagramNode): number {
+  const innerW = NODE_W - 2 * PAD_X
+  const isData = n.kind === 'data'
+  const labelPx = isData ? DATA_LABEL_PX : LABEL_PX
+  const labelCharW = labelPx * (isData ? K_MONO : K_LABEL)
+  const cplLabel = Math.max(1, Math.floor(innerW / labelCharW))
+  const labelLines = Math.max(1, Math.ceil(n.label.length / cplLabel))
+  let h = labelLines * Math.ceil(labelPx * LINE_H)
+
+  const detail = n.detail?.trim()
+  if (detail) {
+    const cplDetail = Math.max(1, Math.floor(innerW / (DETAIL_PX * K_DETAIL)))
+    const detailLines = Math.ceil(detail.length / cplDetail)
+    h += DETAIL_MARGIN + detailLines * Math.ceil(DETAIL_PX * LINE_H)
+  }
+
+  h += 2 * PAD_Y + SLACK
+  return Math.max(MIN_NODE_H, Math.min(MAX_NODE_H, Math.round(h)))
+}
+
 export function layoutDiagram(diagram: Diagram): DiagramLayout {
   const nodes = diagram.nodes
   const edges = diagram.edges
@@ -71,6 +115,9 @@ export function layoutDiagram(diagram: Diagram): DiagramLayout {
     return { nodes: [], edges: [], lanes: [], width: PAD * 2, height: PAD * 2, hasLanes: false }
   }
   const colOf = computeColumns(nodes, edges)
+  // Высота каждого узла под его текст (одна оценка на узел, переиспользуется).
+  const hOf = new Map(nodes.map((n) => [n.id, estimateNodeHeight(n)]))
+  const heightOf = (n: DiagramNode) => hOf.get(n.id) ?? MIN_NODE_H
   const hasLanes = Boolean(diagram.lanes && diagram.lanes.length > 0)
   const leftGutter = hasLanes ? LANE_GUTTER : PAD
 
@@ -90,15 +137,17 @@ export function layoutDiagram(diagram: Diagram): DiagramLayout {
       if (!stacks.has(key)) stacks.set(key, [])
       stacks.get(key)!.push(n)
     })
-    // Высота дорожки = максимальная стопка в ней.
-    const laneMaxStack = lanes.map((_, li) => {
-      let m = 1
+    // Высота стопки = верхний зазор + Σ(высота узла + зазор).
+    const stackHeight = (arr: DiagramNode[]) =>
+      INTRA_GAP + arr.reduce((s, m) => s + heightOf(m) + INTRA_GAP, 0)
+    // Высота дорожки = самая высокая стопка среди её колонок.
+    const laneHeight = lanes.map((_, li) => {
+      let m = MIN_NODE_H + 2 * INTRA_GAP
       stacks.forEach((arr, key) => {
-        if (key.startsWith(`${li}:`)) m = Math.max(m, arr.length)
+        if (key.startsWith(`${li}:`)) m = Math.max(m, stackHeight(arr))
       })
       return m
     })
-    const laneHeight = laneMaxStack.map((m) => m * NODE_H + (m + 1) * INTRA_GAP)
     const laneTop: number[] = []
     let cursor = PAD
     lanes.forEach((l, li) => {
@@ -112,9 +161,10 @@ export function layoutDiagram(diagram: Diagram): DiagramLayout {
       const stack = stacks.get(`${li}:${c}`)!
       // id узлов уникальны (проверяется тестом), поэтому findIndex находит сам n.
       const k = Math.max(0, stack.findIndex((m) => m.id === n.id))
-      const x = xOf(c)
-      const y = laneTop[li] + INTRA_GAP + k * (NODE_H + INTRA_GAP)
-      positioned.push(node(n, c, x, y))
+      // y = верх дорожки + зазор + накопленные высоты предыдущих в стопке.
+      let y = laneTop[li] + INTRA_GAP
+      for (let j = 0; j < k; j++) y += heightOf(stack[j]) + INTRA_GAP
+      positioned.push(node(n, c, xOf(c), y, heightOf(n)))
     })
   } else {
     // Без дорожек: упаковка по колонкам, колонки вертикально центрируются.
@@ -124,13 +174,15 @@ export function layoutDiagram(diagram: Diagram): DiagramLayout {
       if (!byCol.has(c)) byCol.set(c, [])
       byCol.get(c)!.push(n)
     })
-    const maxCount = Math.max(1, ...[...byCol.values()].map((a) => a.length))
+    const colHeight = (arr: DiagramNode[]) =>
+      arr.reduce((s, m) => s + heightOf(m), 0) + ROW_GAP * Math.max(0, arr.length - 1)
+    const maxColHeight = Math.max(MIN_NODE_H, ...[...byCol.values()].map(colHeight))
     byCol.forEach((arr, c) => {
-      const start = (maxCount - arr.length) / 2
-      arr.forEach((n, i) => {
-        const x = xOf(c)
-        const y = PAD + (start + i) * ROW_PITCH
-        positioned.push(node(n, c, x, y))
+      let y = PAD + (maxColHeight - colHeight(arr)) / 2
+      arr.forEach((n) => {
+        const h = heightOf(n)
+        positioned.push(node(n, c, xOf(c), y, h))
+        y += h + ROW_GAP
       })
     })
   }
@@ -157,8 +209,8 @@ export function layoutDiagram(diagram: Diagram): DiagramLayout {
   return { nodes: positioned, edges: routed, lanes: laidLanes, width, height, hasLanes }
 }
 
-function node(n: DiagramNode, col: number, x: number, y: number): PositionedNode {
-  return { ...n, col, x, y, w: NODE_W, h: NODE_H, cx: x + NODE_W / 2, cy: y + NODE_H / 2 }
+function node(n: DiagramNode, col: number, x: number, y: number, h: number): PositionedNode {
+  return { ...n, col, x, y, w: NODE_W, h, cx: x + NODE_W / 2, cy: y + h / 2 }
 }
 
 function routeEdge(e: DiagramEdge, a: PositionedNode, b: PositionedNode): RoutedEdge {

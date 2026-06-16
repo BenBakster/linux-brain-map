@@ -232,7 +232,7 @@
     position: absolute;
     left: 8px;
     top: 6px;
-    font-size: 0.64rem;
+    font-size: 0.68rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: oklch(0.75 0.08 60 / 0.85);
@@ -246,6 +246,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
+    overflow: hidden; /* страховка: содержимое не вытекает за коробку */
     border-radius: 0.7rem;
     padding: 0.35rem 0.5rem;
     border: 1px solid oklch(0.5 0.11 42 / 0.6);
@@ -262,15 +263,21 @@
   .psy-dnode-label {
     color: oklch(0.93 0.06 80);
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     line-height: 1.12;
   }
 
   .psy-dnode-detail {
     margin-top: 0.15rem;
     color: oklch(0.79 0.03 80 / 0.82);
-    font-size: 0.62rem;
+    font-size: 0.72rem;
     line-height: 1.12;
+    /* Страховка: даже если оценка высоты промахнётся, detail не вытекает за
+       узел — клипается с многоточием (полный текст остаётся в title-тултипе). */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+    overflow: hidden;
   }
 
   .psy-dnode[data-kind='decision'] {
@@ -299,7 +306,7 @@
   .psy-dnode[data-kind='data'] .psy-dnode-label {
     font-family:
       ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.74rem;
+    font-size: 0.82rem;
   }
 
   .psy-dnode[data-kind='resource'] {
@@ -357,7 +364,7 @@
 
   .psy-edge-label {
     fill: oklch(0.88 0.06 80);
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     paint-order: stroke;
     stroke: oklch(0.17 0.04 40);
     stroke-width: 3px;
