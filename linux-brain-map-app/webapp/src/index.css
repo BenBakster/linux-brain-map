@@ -336,14 +336,14 @@
   .psy-dnode-label {
     color: oklch(0.93 0.06 80);
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 1rem;
     line-height: 1.12;
   }
 
   .psy-dnode-detail {
     margin-top: 0.15rem;
     color: oklch(0.79 0.03 80 / 0.82);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     line-height: 1.12;
     /* Страховка: даже если оценка высоты промахнётся, detail не вытекает за
        узел — клипается с многоточием (полный текст остаётся в title-тултипе).
@@ -382,7 +382,7 @@
   .psy-dnode[data-kind='data'] .psy-dnode-label {
     font-family:
       ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.82rem;
+    font-size: 0.92rem;
   }
 
   .psy-dnode[data-kind='resource'] {
@@ -421,7 +421,7 @@
   .psy-dedge {
     fill: none;
     stroke: oklch(0.62 0.13 50 / 0.78);
-    stroke-width: 2;
+    stroke-width: 3;
   }
 
   .psy-dedge--branch {
@@ -430,21 +430,24 @@
 
   .psy-dedge--loop {
     stroke: oklch(0.66 0.1 45 / 0.72);
-    stroke-dasharray: 5 4;
+    stroke-dasharray: 6 5;
   }
 
   .psy-dedge--parallel {
     stroke: oklch(0.62 0.08 205 / 0.72);
-    stroke-dasharray: 2 4;
+    stroke-dasharray: 3 5;
+  }
+
+  .psy-edge-label-plate {
+    fill: oklch(0.2 0.04 40 / 0.92);
+    stroke: oklch(0.6 0.12 48 / 0.5);
+    stroke-width: 1px;
   }
 
   .psy-edge-label {
-    fill: oklch(0.88 0.06 80);
-    font-size: 0.68rem;
-    paint-order: stroke;
-    stroke: oklch(0.17 0.04 40);
-    stroke-width: 3px;
-    stroke-linejoin: round;
+    fill: oklch(0.93 0.06 80);
+    font-size: 0.74rem;
+    font-weight: 600;
   }
 
   [data-slot='tabs-trigger'][data-state='active'] {

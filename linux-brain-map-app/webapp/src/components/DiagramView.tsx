@@ -85,36 +85,60 @@ function DiagramCanvas({ layout, markerId }: { layout: DiagramLayout; markerId: 
             <marker
               key={k}
               id={`${markerId}-${k}`}
-              markerWidth="9"
-              markerHeight="9"
-              refX="7.5"
-              refY="3.5"
+              markerWidth="13"
+              markerHeight="12"
+              refX="10.5"
+              refY="5"
               orient="auto"
               markerUnits="userSpaceOnUse"
             >
-              <path d="M0,0 L7.5,3.5 L0,7 Z" fill={EDGE_COLORS[k]} />
+              <path d="M0,0 L11,5 L0,10 Z" fill={EDGE_COLORS[k]} />
             </marker>
           ))}
         </defs>
+        {/* Два прохода: сначала ВСЕ линии, затем ВСЕ подписи — так плашка подписи
+            перекрывает любую линию (а не только собственную), и текст ни на что
+            не налезает. */}
         {edges.map((edge, index) => {
           const kind = edge.kind ?? 'seq'
           return (
-            <g key={`${edge.from}-${edge.to}-${kind}-${edge.label ?? ''}-${index}`}>
-              <path
-                d={edge.path}
-                className={cn(
-                  'psy-dedge',
-                  kind === 'branch' && 'psy-dedge--branch',
-                  kind === 'loop' && 'psy-dedge--loop',
-                  kind === 'parallel' && 'psy-dedge--parallel',
-                )}
-                markerEnd={`url(#${markerId}-${kind})`}
-              />
-              {edge.label && (
-                <text x={edge.labelX} y={edge.labelY} textAnchor="middle" className="psy-edge-label">
-                  {edge.label}
-                </text>
+            <path
+              key={`p-${edge.from}-${edge.to}-${kind}-${edge.label ?? ''}-${index}`}
+              d={edge.path}
+              className={cn(
+                'psy-dedge',
+                kind === 'branch' && 'psy-dedge--branch',
+                kind === 'loop' && 'psy-dedge--loop',
+                kind === 'parallel' && 'psy-dedge--parallel',
               )}
+              markerEnd={`url(#${markerId}-${kind})`}
+            />
+          )
+        })}
+        {edges.map((edge, index) => {
+          if (!edge.label) return null
+          const kind = edge.kind ?? 'seq'
+          return (
+            <g key={`l-${edge.from}-${edge.to}-${kind}-${edge.label}-${index}`}>
+              {/* Скруглённая тёмная плашка под подписью: текст читается поверх
+                  линий и узлов; rx — лёгкое скругление углов плашки. */}
+              <rect
+                className="psy-edge-label-plate"
+                x={edge.labelX - edge.labelW / 2}
+                y={edge.labelY - edge.labelH / 2}
+                width={edge.labelW}
+                height={edge.labelH}
+                rx="4"
+              />
+              <text
+                x={edge.labelX}
+                y={edge.labelY}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className="psy-edge-label"
+              >
+                {edge.label}
+              </text>
             </g>
           )
         })}

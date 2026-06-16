@@ -6,14 +6,14 @@
 
 import type { Diagram, DiagramEdge, DiagramNode } from '@/data/diagram'
 
-export const NODE_W = 160
-export const COL_GAP = 36
-export const ROW_GAP = 28
+export const NODE_W = 200
+export const COL_GAP = 30
+export const ROW_GAP = 24
 export const PAD = 20
 export const LANE_GUTTER = 84 // место слева под подписи дорожек
 export const INTRA_GAP = 12 // зазор при стопке узлов в одной ячейке дорожки
-export const MIN_NODE_H = 76 // пол высоты узла: короткие узлы остаются «коробкой»
-export const MAX_NODE_H = 132 // потолок: антибомба на гигантский detail
+export const MIN_NODE_H = 88 // пол высоты узла: короткие узлы остаются «коробкой»
+export const MAX_NODE_H = 164 // потолок: антибомба на гигантский detail
 const COL_PITCH = NODE_W + COL_GAP
 
 // Аналитическая оценка высоты узла под его текст — без DOM-замеров, чтобы
@@ -24,14 +24,28 @@ const COL_PITCH = NODE_W + COL_GAP
 const PAD_X = 8 // padding-inline узла (0.5rem)
 const PAD_Y = 5.6 // padding-block узла (0.35rem)
 const LINE_H = 1.12 // line-height текстов узла
-const LABEL_PX = 14.4 // .psy-dnode-label (0.9rem)
-const DATA_LABEL_PX = 13.12 // моноширинная метка data-узла (0.82rem)
-const DETAIL_PX = 11.52 // .psy-dnode-detail (0.72rem)
+const LABEL_PX = 16 // .psy-dnode-label (1rem)
+const DATA_LABEL_PX = 14.72 // моноширинная метка data-узла (0.92rem)
+const DETAIL_PX = 12.8 // .psy-dnode-detail (0.8rem)
 const DETAIL_MARGIN = 2.4 // margin-top detail (0.15rem)
 const K_LABEL = 0.6 // средняя ширина глифа / кегль (кириллица, пропорциональный)
 const K_MONO = 0.62 // то же для моноширинной метки data-узла
 const K_DETAIL = 0.55 // то же для detail
-const SLACK = 8 // запас на округления оценки
+const SLACK = 10 // запас на округления оценки
+
+// Подпись на ребре рисуется на сплошной плашке (читается над любыми линиями и
+// узлами). Ширину плашки оцениваем аналитически из длины подписи — тем же
+// методом, что и высоту узла, чтобы рендер оставался без DOM-замеров. Должно
+// соответствовать .psy-edge-label в index.css.
+const EDGE_LABEL_PX = 11.84 // .psy-edge-label (0.74rem)
+const K_EDGE = 0.55 // средняя ширина глифа / кегль для подписи ребра
+const EDGE_LABEL_PAD_X = 7 // горизонтальный отступ текста внутри плашки
+const EDGE_LABEL_H = 20 // высота плашки подписи (одна строка)
+
+function edgeLabelWidth(label: string | undefined): number {
+  if (!label) return 0
+  return Math.ceil(label.length * EDGE_LABEL_PX * K_EDGE) + 2 * EDGE_LABEL_PAD_X
+}
 
 export type PositionedNode = DiagramNode & {
   col: number
@@ -47,6 +61,8 @@ export type RoutedEdge = DiagramEdge & {
   path: string
   labelX: number
   labelY: number
+  labelW: number
+  labelH: number
   isBack: boolean
 }
 
@@ -198,12 +214,16 @@ export function layoutDiagram(diagram: Diagram): DiagramLayout {
     })
     .map((e) => routeEdge(e, byId.get(e.from)!, byId.get(e.to)!))
 
-  const width = Math.max(PAD * 2, ...positioned.map((p) => p.x + p.w + PAD))
+  const width = Math.max(
+    PAD * 2,
+    ...positioned.map((p) => p.x + p.w + PAD),
+    ...routed.map((r) => r.labelX + r.labelW / 2 + PAD),
+  )
   const height = Math.max(
     PAD * 2,
     ...positioned.map((p) => p.y + p.h + PAD),
     ...laidLanes.map((l) => l.y + l.height + PAD),
-    ...routed.map((r) => r.labelY + PAD),
+    ...routed.map((r) => r.labelY + r.labelH / 2 + PAD),
   )
 
   return { nodes: positioned, edges: routed, lanes: laidLanes, width, height, hasLanes }
@@ -268,7 +288,15 @@ function routeEdge(e: DiagramEdge, a: PositionedNode, b: PositionedNode): Routed
     labelY = (sy + ey) / 2 - 8
   }
 
-  return { ...e, path, labelX, labelY, isBack: back }
+  return {
+    ...e,
+    path,
+    labelX,
+    labelY,
+    labelW: edgeLabelWidth(e.label),
+    labelH: EDGE_LABEL_H,
+    isBack: back,
+  }
 }
 
 /**
