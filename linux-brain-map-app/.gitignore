@@ -35,3 +35,6 @@ backend/.prisma-generate.lock
 .vscode/
 *.swp
 *.swo
+
+# Локальная dev-записка хэндоффа для новой сессии — НЕ в публичный репо
+/HANDOFF-schemes.md
