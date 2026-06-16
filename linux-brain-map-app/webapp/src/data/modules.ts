@@ -22,12 +22,18 @@ export type QuizQuestion = {
   explanation: string
 }
 
+export type Epigraph = {
+  text: string
+  author: string
+}
+
 export type Module = {
   id: string
   number: number
   title: string
   mnemonic: string
   mnemonicExpansion: string
+  epigraph?: Epigraph
   summary: string
   explainer?: string[]
   flow: FlowStep[]
@@ -47,6 +53,10 @@ export const MODULES: Module[] = [
     title: 'Архитектура Linux',
     mnemonic: 'KUPU',
     mnemonicExpansion: 'Kernel · Userspace · Processes · Users',
+    epigraph: {
+      text: 'UNIX прост. Просто нужен гений, чтобы понять его простоту.',
+      author: 'Деннис Ритчи',
+    },
     summary: 'Четыре слоя: железо → ядро → userspace → приложения. Всё диагностику начинай с /proc.',
     explainer: [
       'Linux как слоёный пирог. Снизу — железо (CPU, RAM, диски, сетевые карты). Над ним ядро (kernel) — единственный код с прямым доступом к железу, работающий в привилегированном режиме (на x86 это ring 0). Выше — userspace: библиотеки, демоны, оболочка и прикладные программы, у которых прямого доступа к железу нет. Мнемоника KUPU (Kernel · Userspace · Processes · Users) задаёт порядок, в котором стоит думать о системе и искать неисправность.',
@@ -109,6 +119,10 @@ export const MODULES: Module[] = [
     title: 'Загрузка',
     mnemonic: 'UGKIS',
     mnemonicExpansion: 'UEFI → GRUB → Kernel → initramfs → systemd',
+    epigraph: {
+      text: 'init — родитель всех процессов; его главная роль — порождать процессы по сценарию запуска.',
+      author: 'man init(8)',
+    },
     summary: 'От UEFI до login prompt — цепочка из 5 звеньев. Зависание = смотри journalctl -b.',
     explainer: [
       'Загрузка — это эстафета. Питание включается, и управление передаётся по цепочке, где каждое звено готовит и запускает следующее: прошивка UEFI (или старый BIOS) → загрузчик GRUB → ядро Linux (vmlinuz) → временный образ initramfs → первый процесс userspace init/systemd. Мнемоника UGKIS — порядок этих звеньев; зная его, всегда понятно, на каком этапе всё встало.',
@@ -166,6 +180,10 @@ export const MODULES: Module[] = [
     title: 'Системные вызовы',
     mnemonic: 'UKU',
     mnemonicExpansion: 'User → Kernel → User',
+    epigraph: {
+      text: 'Системный вызов — фундаментальный интерфейс между приложением и ядром Linux.',
+      author: 'man syscalls(2)',
+    },
     summary: 'Единственный легальный путь приложения в ядро. strace — твой рентген.',
     explainer: [
       'Зачем вообще нужны системные вызовы. Userspace-программа не имеет прямого доступа к железу и привилегированным операциям: ядро работает в защищённом режиме (ring 0), приложения — в ring 3. Единственный легальный мост между ними — syscall-интерфейс: контролируемая «дверь», на входе которой ядро проверяет права и аргументы.',
@@ -235,6 +253,10 @@ export const MODULES: Module[] = [
     title: 'Процессы',
     mnemonic: 'FET',
     mnemonicExpansion: 'Fork → Exec → Terminate',
+    epigraph: {
+      text: 'Процесс — это адресное пространство с одним или несколькими потоками, исполняющимися в нём.',
+      author: 'стандарт POSIX',
+    },
     summary: 'fork клонирует, exec заменяет образ, zombie = родитель не вызвал wait().',
     explainer: [
       'Жизненный цикл процесса: FET. Новый процесс рождается через fork() — ядро создаёт почти точную копию родителя (то же адресное пространство по принципу copy-on-write, те же открытые дескрипторы). Сразу после этого потомок обычно делает exec() — заменяет свой образ на другую программу, сохраняя при этом PID. В конце — Terminate: процесс завершается и отдаёт код возврата родителю.',
@@ -304,6 +326,10 @@ export const MODULES: Module[] = [
     title: 'Планировщик CFS',
     mnemonic: 'CFS',
     mnemonicExpansion: 'Completely Fair Scheduler',
+    epigraph: {
+      text: 'CFS, по сути, моделирует „идеальный, точный многозадачный процессор“ на реальном железе.',
+      author: 'Инго Молнар, документация CFS',
+    },
     summary: 'Красно-чёрное дерево по vruntime. nice -20..19 меняет вес CPU.',
     explainer: [
       'Что вообще решает планировщик. На нескольких ядрах одновременно «готовы бежать» десятки и сотни процессов. Планировщик выбирает, кто из готовых (Ready) получит ядро и на сколько. Цель «честного» класса SCHED_OTHER — чтобы никто не простаивал слишком долго и интерактивные задачи оставались отзывчивыми.',
@@ -368,6 +394,10 @@ export const MODULES: Module[] = [
     title: 'Память',
     mnemonic: 'VPS',
     mnemonicExpansion: 'Virtual · Paging · Swap',
+    epigraph: {
+      text: 'Любую проблему в информатике можно решить добавлением ещё одного уровня косвенности.',
+      author: 'Дэвид Уилер',
+    },
     summary: 'Page fault → подгрузка → swap → OOM Killer. si/so в vmstat = swap активен.',
     explainer: [
       'Виртуальная память — это иллюзия для процесса. Каждый процесс видит своё непрерывное адресное пространство, хотя физически его страницы разбросаны по RAM или вытеснены в swap. Перевод «виртуальный адрес → физический» делает аппаратный MMU по таблицам страниц, которые ведёт ядро.',
@@ -440,6 +470,10 @@ export const MODULES: Module[] = [
     title: 'Синхронизация',
     mnemonic: 'MSFR',
     mnemonicExpansion: 'Mutex · Semaphore · Futex · RCU',
+    epigraph: {
+      text: 'Конкурентность — это не параллелизм.',
+      author: 'Роб Пайк',
+    },
     summary: 'Userspace mutex → futex syscall → sleep в ядре. D state = uninterruptible I/O.',
     explainer: [
       'Зачем синхронизация. Когда несколько потоков или процессов одновременно трогают общие данные, без координации возникают гонки (race conditions) и порча данных. Примитивы синхронизации сериализуют доступ к критической секции — гарантируют, что в неё в каждый момент входит только один.',
@@ -500,6 +534,10 @@ export const MODULES: Module[] = [
     title: 'IPC',
     mnemonic: 'PFMS',
     mnemonicExpansion: 'Pipe · FIFO · mmap · Socket',
+    epigraph: {
+      text: 'Нужно уметь соединять программы, как садовый шланг: прикрутил ещё сегмент, когда данные надо обработать иначе.',
+      author: 'Дуг Макилрой',
+    },
     summary: 'Выбор IPC: родственные → pipe, большие данные → shm, сеть → socket.',
     explainer: [
       'Зачем процессам общаться и почему способов так много. Процессы изолированы — у каждого своё адресное пространство, и просто так залезть в память соседа нельзя. IPC (inter-process communication) — это механизмы, которыми ядро даёт процессам обмениваться данными. Способов несколько, потому что у задач разные требования: родственные процессы или чужие, пара байт или гигабайты, один хост или сеть. Мнемоника PFMS — четыре опорных варианта: Pipe · FIFO · mmap · Socket.',
@@ -563,6 +601,10 @@ export const MODULES: Module[] = [
     title: 'Файловые системы',
     mnemonic: 'VID',
     mnemonicExpansion: 'VFS · Inode · Dentry',
+    epigraph: {
+      text: 'Всё есть файл.',
+      author: 'философия UNIX',
+    },
     summary: 'Путь к файлу: имя → dentry cache → inode → блоки на диске.',
     explainer: [
       'VFS — переходник между «файлом» и железом. Программы работают с файлами одинаково (open/read/write) независимо от того, лежит файл на ext4, XFS, Btrfs, сетевой NFS или вообще в виртуальной /proc. Эту единую абстракцию даёт VFS (Virtual File System) — слой ядра, переводящий общие операции в вызовы конкретной файловой системы. Мнемоника VID (VFS · Inode · Dentry) — три кита, на которых держится путь к данным.',
@@ -641,6 +683,10 @@ export const MODULES: Module[] = [
     title: 'Блочный I/O',
     mnemonic: 'BDF',
     mnemonicExpansion: 'Block layer · Device · Filesystem',
+    epigraph: {
+      text: 'Память — это новый диск, диск — это новая лента.',
+      author: 'Джим Грей',
+    },
     summary: 'Приложение → FS → block layer → драйвер → диск. iowait = диск bottleneck.',
     explainer: [
       'Что такое блочное устройство. Диски (HDD, SSD, NVMe) — это блочные устройства: данные читаются и пишутся фиксированными блоками и в произвольном порядке, в отличие от потоковых, «символьных», устройств. Между прикладной программой и пластиной или флеш-памятью лежит несколько слоёв ядра, и узкое место чаще оказывается именно здесь, а не в процессоре. Мнемоника BDF перечисляет участников: Block layer · Device · Filesystem.',
@@ -704,6 +750,10 @@ export const MODULES: Module[] = [
     title: 'Сеть',
     mnemonic: 'STN',
     mnemonicExpansion: 'Socket · TCP stack · Netfilter',
+    epigraph: {
+      text: 'Сеть — это компьютер.',
+      author: 'Джон Гейдж, Sun Microsystems',
+    },
     summary: 'Пакет: NIC → стек → netfilter → socket → приложение.',
     explainer: [
       'Как пакет попадает в программу. Сетевая карта (NIC) принимает кадр и сигналит ядру; сетевой стек разбирает заголовки слой за слоем (Ethernet → IP → TCP/UDP), пакет проходит через netfilter (фаервол), ядро находит сокет, которому он адресован, и кладёт данные в его буфер — откуда их и читает приложение. Мнемоника STN — ключевые звенья: Socket · TCP stack · Netfilter.',
@@ -761,6 +811,10 @@ export const MODULES: Module[] = [
     title: 'Безопасность',
     mnemonic: 'CAPNS',
     mnemonicExpansion: 'Capabilities · AppArmor · PAM · Namespaces · Seccomp',
+    epigraph: {
+      text: 'По-настоящему безопасна лишь система, которая выключена, залита в бетон и заперта в свинцовой комнате под охраной, — да и тогда я не поручусь.',
+      author: 'Юджин Спаффорд',
+    },
     summary: 'Защита в глубину: DAC → capabilities → LSM → namespaces → seccomp.',
     explainer: [
       'Защита в глубину, а не единственный забор. Безопасность Linux собрана из нескольких независимых слоёв, и атакующему нужно пробить каждый. Базовый слой — DAC (права владелец/группа/прочие), затем дробление root на capabilities, поверх — мандатный контроль LSM (AppArmor или SELinux), изоляция через namespaces и фильтр системных вызовов seccomp. Мнемоника CAPNS перечисляет эти рубежи; падение одного из них ещё не означает компрометацию всей системы.',

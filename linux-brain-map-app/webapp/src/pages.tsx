@@ -225,6 +225,16 @@ export function ModulePage() {
 
       <Card className="psy-highlight-card mb-6 backdrop-blur-sm">
         <CardContent className="pt-6">
+          {mod.epigraph && (
+            <figure className="mb-4 border-l-2 border-accent/40 pl-3">
+              <blockquote className="text-sm italic text-muted-foreground">
+                «{mod.epigraph.text}»
+              </blockquote>
+              <figcaption className="mt-1 text-xs text-muted-foreground/80">
+                — {mod.epigraph.author}
+              </figcaption>
+            </figure>
+          )}
           <p className="font-mono text-sm tracking-wide text-[oklch(0.9_0.08_80)]">
             {mod.mnemonicExpansion}
           </p>
