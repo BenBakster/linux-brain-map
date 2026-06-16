@@ -50,8 +50,6 @@ export type DiagramLane = {
 }
 
 export type Diagram = {
-  /** Направление основного потока. По умолчанию 'horizontal' (слева направо). */
-  orientation?: 'horizontal' | 'vertical'
   /** Слои сверху вниз. Если заданы — узлы раскладываются по своим lane. */
   lanes?: DiagramLane[]
   nodes: DiagramNode[]

@@ -2,7 +2,6 @@ import type { Diagram } from './diagram'
 
 export const MODULE_DIAGRAMS: Record<number, Diagram> = {
   1: {
-    orientation: 'vertical',
     lanes: [
       { id: 'user', label: 'Userspace (ring 3)' },
       { id: 'kern', label: 'Ядро (ring 0)' },
@@ -123,7 +122,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   2: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'fw', label: 'Прошивка и загрузчик' },
       { id: 'krn', label: 'Ядро и initramfs' },
@@ -258,7 +256,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   3: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'Userspace (ring 3)' },
       { id: 'kernel', label: 'Ядро (ring 0)' },
@@ -380,7 +377,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   4: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'Userspace (системные вызовы, сигналы)' },
       { id: 'kernel', label: 'Ядро (состояния, /proc, reaping)' },
@@ -515,7 +511,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   5: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'Userspace (задачи)' },
       { id: 'kernel', label: 'Ядро (планировщик)' },
@@ -638,7 +633,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   6: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'Userspace (процесс)' },
       { id: 'hw', label: 'Аппаратура (MMU/TLB/RAM)' },
@@ -772,7 +766,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   7: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'Userspace (потоки приложения)' },
       { id: 'kernel', label: 'Ядро (примитивы, очереди ожидания)' },
@@ -911,7 +904,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   8: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'Userspace (процессы)' },
       { id: 'kernel', label: 'Ядро (транспорт IPC)' },
@@ -1041,7 +1033,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   9: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'userspace' },
       { id: 'vfs', label: 'VFS (ядро)' },
@@ -1183,7 +1174,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   10: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'user', label: 'Userspace (приложение)' },
       { id: 'kernel', label: 'Ядро (VFS · page cache · block layer)' },
@@ -1309,7 +1299,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   11: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'app', label: 'Userspace (приложение)' },
       { id: 'kernel', label: 'Ядро (сетевой стек)' },
@@ -1450,7 +1439,6 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
     ],
   },
   12: {
-    orientation: 'horizontal',
     lanes: [
       { id: 'userspace', label: 'Userspace (вход / аудит)' },
       { id: 'policy', label: 'Слои политики безопасности' },
