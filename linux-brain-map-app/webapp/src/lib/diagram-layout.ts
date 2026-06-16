@@ -6,12 +6,12 @@
 
 import type { Diagram, DiagramEdge, DiagramNode } from '@/data/diagram'
 
-export const NODE_W = 184
-export const COL_GAP = 60
-export const ROW_GAP = 40
-export const PAD = 28
-export const LANE_GUTTER = 104 // место слева под подписи дорожек
-export const INTRA_GAP = 16 // зазор при стопке узлов в одной ячейке дорожки
+export const NODE_W = 160
+export const COL_GAP = 36
+export const ROW_GAP = 28
+export const PAD = 20
+export const LANE_GUTTER = 84 // место слева под подписи дорожек
+export const INTRA_GAP = 12 // зазор при стопке узлов в одной ячейке дорожки
 export const MIN_NODE_H = 76 // пол высоты узла: короткие узлы остаются «коробкой»
 export const MAX_NODE_H = 132 // потолок: антибомба на гигантский detail
 const COL_PITCH = NODE_W + COL_GAP
