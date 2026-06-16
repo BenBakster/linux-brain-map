@@ -1499,7 +1499,7 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
         id: 'seccomp',
         label: 'seccomp-фильтр',
         detail:
-          'BPF-фильтр на самом входе в syscall (до тела вызова и проверок доступа): обрезает набор разрешённых системных вызовов.',
+          'BPF-фильтр на самом входе в syscall — ещё до тела вызова и проверок доступа — обрезает набор разрешённых системных вызовов.',
         kind: 'decision',
         lane: 'policy',
       },
