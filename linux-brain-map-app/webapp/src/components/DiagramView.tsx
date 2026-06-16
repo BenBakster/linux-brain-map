@@ -1,7 +1,7 @@
 import { useId } from 'react'
 
 import type { Diagram, DiagramNodeKind } from '@/data/diagram'
-import { layoutDiagram } from '@/lib/diagram-layout'
+import { describeTransitions, layoutDiagram } from '@/lib/diagram-layout'
 import { cn } from '@/lib/utils'
 
 type DiagramViewProps = {
@@ -34,6 +34,7 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
   const rawId = useId()
   const markerId = `arw-${rawId.replace(/[^a-zA-Z0-9]/g, '')}`
   const { nodes, edges, lanes, width, height } = layoutDiagram(diagram)
+  const transitions = describeTransitions(diagram)
 
   if (nodes.length === 0) {
     return <p className="text-sm text-muted-foreground">Схема пока не задана.</p>
@@ -113,6 +114,17 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
           ))}
         </div>
       </div>
+
+      {transitions.length > 0 && (
+        <div className="sr-only">
+          <p>Переходы схемы (текстовая альтернатива к стрелкам):</p>
+          <ul>
+            {transitions.map((t, i) => (
+              <li key={`${i}-${t}`}>{t}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
         {usedKinds.map((kind) => (

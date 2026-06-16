@@ -218,3 +218,28 @@ function routeEdge(e: DiagramEdge, a: PositionedNode, b: PositionedNode): Routed
 
   return { ...e, path, labelX, labelY, isBack: back }
 }
+
+/**
+ * Текстовая альтернатива для скринридеров: переходы схемы словами.
+ * SVG со стрелками и подписями условий декоративен (aria-hidden), поэтому
+ * условия ветвлений иначе до AT не доходят. Здесь каждое ребро проговаривается
+ * «откуда: связь → куда» с учётом типа (ветвление / возврат / параллель).
+ * Чистая функция — тестируется без DOM.
+ */
+export function describeTransitions(diagram: Diagram): string[] {
+  const labelOf = new Map(diagram.nodes.map((n) => [n.id, n.label]))
+  return diagram.edges
+    .filter((e) => labelOf.has(e.from) && labelOf.has(e.to))
+    .map((e) => {
+      const from = labelOf.get(e.from)!
+      const to = labelOf.get(e.to)!
+      const kind = e.kind ?? 'seq'
+      const cond = e.label?.trim()
+      let link: string
+      if (kind === 'branch') link = cond ? `при условии «${cond}»` : 'ветвление'
+      else if (kind === 'loop') link = cond ? `возврат (${cond})` : 'возврат'
+      else if (kind === 'parallel') link = cond ? `параллельно (${cond})` : 'параллельно'
+      else link = cond ? cond : 'затем'
+      return `${from}: ${link} → ${to}`
+    })
+}

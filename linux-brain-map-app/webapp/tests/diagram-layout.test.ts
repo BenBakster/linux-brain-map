@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
 import type { Diagram } from '../src/data/diagram'
-import { computeColumns, layoutDiagram, NODE_W } from '../src/lib/diagram-layout'
+import { computeColumns, describeTransitions, layoutDiagram, NODE_W } from '../src/lib/diagram-layout'
 
 test('линейная цепочка → колонки 0,1,2', () => {
   const nodes = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }]
@@ -106,6 +106,31 @@ test('колонки сдвигают узлы вправо на шаг коло
   const b = out.nodes.find((n) => n.id === 'b')!
   expect(b.x).toBeGreaterThan(a.x + NODE_W)
   expect(out.width).toBeGreaterThan(b.x)
+})
+
+test('describeTransitions: проговаривает рёбра по типу и подписи, имена узлов вместо id', () => {
+  const diagram: Diagram = {
+    nodes: [
+      { id: 'd', label: 'Развилка' },
+      { id: 'y', label: 'Да-узел' },
+      { id: 's', label: 'След.' },
+      { id: 'p', label: 'Параллель' },
+    ],
+    edges: [
+      { from: 'd', to: 'y', kind: 'branch', label: 'если да' },
+      { from: 'y', to: 's', kind: 'seq' },
+      { from: 's', to: 'd', kind: 'loop', label: 'назад' },
+      { from: 'd', to: 'p', kind: 'parallel' },
+      { from: 'd', to: 'GHOST', kind: 'seq' }, // битое ребро отбрасывается
+    ],
+  }
+  const lines = describeTransitions(diagram)
+  expect(lines).toEqual([
+    'Развилка: при условии «если да» → Да-узел',
+    'Да-узел: затем → След.',
+    'След.: возврат (назад) → Развилка',
+    'Развилка: параллельно → Параллель',
+  ])
 })
 
 test('обратное ребро помечается isBack и рисуется дугой', () => {
