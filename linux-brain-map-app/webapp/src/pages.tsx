@@ -2,7 +2,7 @@ import { Link, Outlet, useParams } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 
 import { CopyButton } from '@/components/CopyButton'
-import { FlowDiagram } from '@/components/FlowDiagram'
+import { DiagramView, decisionsToDiagram } from '@/components/DiagramView'
 import { linkifyProse } from '@/components/GlossaryLinker'
 import { ProgressBar } from '@/components/ProgressBar'
 import { QuizPanel } from '@/components/QuizPanel'
@@ -37,6 +37,7 @@ import {
 } from '@/data/timeline'
 import { HYGIENE_ITEMS } from '@/data/hygiene'
 import { ATTACK_TACTICS, IBM_TOPICS, KILL_CHAIN } from '@/data/ibm'
+import { MODULE_DIAGRAMS } from '@/data/module-diagrams'
 import { MODULES, getModule } from '@/data/modules'
 import { REVIEW_CARDS, type ReviewTrack } from '@/data/review'
 import { PYTHON_SCRIPTS, TOOLKIT_SCRIPTS, bashCmd, pythonCmd } from '@/data/toolkit'
@@ -215,6 +216,7 @@ export function ModulePage() {
     ? bashCmd(`./${mod.bashScript}`)
     : mod.commands[0]
   const explainerSeen = new Set<string>()
+  const diagram = MODULE_DIAGRAMS[mod.number]
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6">
@@ -276,10 +278,17 @@ export function ModulePage() {
         <TabsContent value="scheme">
           <Card>
             <CardHeader>
-              <CardTitle>Поток — запомни стрелки</CardTitle>
+              <CardTitle>Схема механизма</CardTitle>
+              <CardDescription>
+                Ветвления, петли и слои — как это работает на самом деле, а не одной линией.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <FlowDiagram steps={mod.flow} />
+              {diagram ? (
+                <DiagramView diagram={diagram} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Схема пока не задана.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -316,18 +325,10 @@ export function ModulePage() {
           <Card>
             <CardHeader>
               <CardTitle>Дерево решений</CardTitle>
+              <CardDescription>Признак → команда диагностики.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-3">
-              {mod.decisions.map((d) => (
-                <div
-                  key={d.condition}
-                  className="flex flex-col gap-1 rounded-lg border p-3 sm:flex-row sm:items-center sm:gap-4"
-                >
-                  <span className="font-medium text-destructive">Если: {d.condition}</span>
-                  <span className="hidden text-muted-foreground sm:inline">→</span>
-                  <code className="rounded bg-muted px-2 py-1 font-mono text-sm">{d.action}</code>
-                </div>
-              ))}
+            <CardContent>
+              <DiagramView diagram={decisionsToDiagram(mod.decisions)} />
             </CardContent>
           </Card>
         </TabsContent>

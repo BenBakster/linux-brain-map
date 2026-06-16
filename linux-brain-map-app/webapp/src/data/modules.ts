@@ -9,12 +9,6 @@ export type DecisionNode = {
   action: string
 }
 
-export type FlowStep = {
-  id: string
-  label: string
-  detail?: string
-}
-
 export type QuizQuestion = {
   question: string
   options: string[]
@@ -36,7 +30,6 @@ export type Module = {
   epigraph?: Epigraph
   summary: string
   explainer?: string[]
-  flow: FlowStep[]
   table: ModuleRow[]
   decisions: DecisionNode[]
   commands: string[]
@@ -64,13 +57,6 @@ export const MODULES: Module[] = [
       'Почему диагностику ведут сверху вниз. Большинство вопросов «почему тормозит / почему не работает» сводится к определению слоя: это прикладной процесс, ядро, драйвер или железо? Сначала смотрят, что делает userspace (ps, /proc/PID), и лишь если там чисто — спускаются к ядру (dmesg), драйверам (lsmod, lspci) и железу (SMART, температуры). Перепрыгивать слои — типичная ошибка новичка.',
       'Инструмент на каждый слой. Userspace: ps aux, top, ls /proc/PID — кто запущен и что делает. Ядро: uname -r (версия), dmesg и journalctl -k (сообщения ядра, Oops, паники). Драйверы и устройства: lsmod (загруженные модули), lspci и lsusb (что за железо), дерево /sys. Само железо: free -h (RAM), lsblk (диски), nproc (число ядер CPU). Понимать, к какому слою относится команда, важнее, чем заучивать флаги.',
       'Пример. Система «тормозит». Сначала userspace: ps aux --sort=-%cpu | head — если один процесс ест 100% CPU, дело в нём, а не в ядре. CPU свободен, но всё равно медленно — free -h и vmstat 1 проверят, не упёрлись ли в память и своп. И память в норме — dmesg | tail покажет, не сыплет ли ядро ошибками от драйвера или диска. Движение строго по слоям быстро локализует виновника.',
-    ],
-    flow: [
-      { id: 'app', label: 'Приложения / shell' },
-      { id: 'libc', label: 'glibc' },
-      { id: 'syscall', label: 'Syscalls' },
-      { id: 'kernel', label: 'Ядро' },
-      { id: 'hw', label: 'Железо' },
     ],
     table: [
       { entity: 'Userspace', where: 'ps aux, ls /proc', signal: 'процесс жрёт 100% CPU' },
@@ -131,13 +117,6 @@ export const MODULES: Module[] = [
       'Передача systemd и где смотреть. Смонтировав реальный корень, ядро делает exec /sbin/init — этот процесс становится PID 1 (обычно systemd, реже runit или OpenRC). Дальше параллельно поднимаются юниты до целевого состояния (например graphical.target). Журнал текущей загрузки — journalctl -b (с ключом -p err только ошибки); самые медленные юниты — systemd-analyze blame; упавшие — systemctl --failed.',
       'Пример. Загрузка зависла. Не дошли даже до меню GRUB — проблема в прошивке, ESP или загрузчике. Меню есть, дальше чёрный экран — проверяйте параметр root= и наличие /boot. Сообщение «Cannot open root device» или приглашение (initramfs) — ядро не нашло или не открыло корень (часто LUKS либо отсутствующий модуль). Дошли до login, но висит сервис — systemctl --failed и journalctl -b -p err назовут виновника.',
     ],
-    flow: [
-      { id: 'uefi', label: 'UEFI/BIOS' },
-      { id: 'grub', label: 'GRUB' },
-      { id: 'kernel', label: 'vmlinuz' },
-      { id: 'initramfs', label: 'initramfs' },
-      { id: 'init', label: 'systemd (PID 1)' },
-    ],
     table: [
       { entity: 'GRUB', where: '/boot/grub/', signal: 'grub rescue> / нет меню' },
       { entity: 'Kernel', where: 'dmesg, journalctl -b', signal: 'root не найден' },
@@ -190,13 +169,6 @@ export const MODULES: Module[] = [
       'Как это устроено технически. Обычно приложение зовёт не syscall напрямую, а тонкую обёртку из libc: например, read() в C превращается в инструкцию syscall с номером вызова и аргументами в регистрах. Ядро по номеру находит обработчик, выполняет его и кладёт результат обратно в регистр. Ошибка возвращается ядром как отрицательное значение (например -EACCES); обёртка libc преобразует его в errno (положительный код) и возвращает вызывающему -1.',
       'Почему это ключ к диагностике. Практически любое взаимодействие программы с миром — файлы, сеть, память, процессы — это системные вызовы. Поэтому strace работает как рентген: если программа «молчит», падает или висит, трассировка показывает, на каком именно вызове и с каким errno это произошло.',
       'Рабочий пример. strace -f -e trace=file ./app покажет каждый open/stat/access и какой из них вернул EACCES или ENOENT — это мгновенно отвечает на вопрос «почему не открывается файл». А strace -c ./app агрегирует статистику: сколько времени и вызовов съел каждый syscall — сразу видно, упирается программа в I/O или в CPU.',
-    ],
-    flow: [
-      { id: 'app', label: 'Приложение' },
-      { id: 'libc', label: 'libc wrapper' },
-      { id: 'gate', label: 'syscall gate' },
-      { id: 'handler', label: 'обработчик ядра' },
-      { id: 'ret', label: 'return code' },
     ],
     table: [
       { entity: 'fork', where: 'strace -f -e trace=clone,clone3,vfork', signal: 'fork()→clone, новые процессы' },
@@ -265,14 +237,6 @@ export const MODULES: Module[] = [
       'Где правда о процессе. Каталог /proc/PID/ — это досье: status (PID, PPID, состояние, память), cmdline (строка запуска, argv), exe (символическая ссылка на сам бинарник), fd/ (открытые дескрипторы), cwd (рабочий каталог). Это важно для безопасности: короткое имя comm и даже строку запуска cmdline процесс умеет переписать сам (тот же приём, что setproctitle, прав для этого не нужно). Надёжнее всего ссылка exe — подменить её на произвольный путь нельзя; а запуск из удалённого файла или памяти выдаёт себя пометкой «(deleted)». Поэтому маскировку вычисляют прежде всего по exe.',
       'Пример. В выводе ps -eo pid,ppid,stat,cmd виден процесс в состоянии Z. kill по его PID бесполезен — смотрим PPID и разбираемся с родителем. Процесс с «нормальным» именем вызывает подозрения: ls -l /proc/PID/exe покажет, откуда реально запущен бинарник (например из /tmp — красный флаг), а cat /proc/PID/cmdline — с какими аргументами он стартовал.',
     ],
-    flow: [
-      { id: 'fork', label: 'fork()' },
-      { id: 'ready', label: 'Ready' },
-      { id: 'run', label: 'Running' },
-      { id: 'sleep', label: 'Sleeping' },
-      { id: 'zombie', label: 'Zombie (Z)' },
-      { id: 'wait', label: 'wait() родителем' },
-    ],
     table: [
       { entity: 'PID', where: '/proc/PID/status', signal: 'идентификатор' },
       { entity: 'PPID', where: '/proc/PID/status', signal: 'родитель zombie' },
@@ -338,12 +302,6 @@ export const MODULES: Module[] = [
       'Где это кусается на практике. RT-процесс с багом (busy loop) способен почти полностью заголодить userspace; по умолчанию ядро ограничивает RT-классы (sched_rt_runtime_us ≈ 95%), оставляя 5% на остальных, но при отключённом throttling или на одном ядре система может встать колом. Диагностика: ps -eo cls,rtprio,pri,cmd находит класс FF/RR; chrt -p PID показывает политику, а chrt <policy> -p <prio> PID её меняет (например chrt -o -p 0 PID вернёт процесс в SCHED_OTHER). В контейнерах потолок задаёт cgroup через cpu.max.',
       'Пример. ps -eo pid,ni,cls,rtprio,psr,stat,cmd --sort=-rtprio | head поднимет наверх RT-задачи; если там оказалось что-то неожиданное (не аудио и не поток ядра) — это первый кандидат на расследование.',
     ],
-    flow: [
-      { id: 'rq', label: 'Runqueue' },
-      { id: 'cfs', label: 'CFS tree' },
-      { id: 'cpu', label: 'CPU core' },
-      { id: 'rt', label: 'RT SCHED_FIFO' },
-    ],
     table: [
       { entity: 'nice', where: 'ps -eo ni,pri,cmd', signal: '-20 высший приоритет' },
       { entity: 'policy', where: 'chrt -p PID', signal: 'RT вытесняет CFS' },
@@ -405,13 +363,6 @@ export const MODULES: Module[] = [
       'Своппинг и OOM. Если рабочий набор больше RAM, система начинает безостановочно гонять страницы туда-сюда — в vmstat поля si/so стабильно больше нуля. Это thrashing: формально живо, фактически всё тормозит. Когда вытеснять уже некуда, включается OOM Killer: он выбирает процесс с наибольшим oom_score и убивает его, чтобы спасти систему.',
       'Что именно мерить. VmRSS — это реально занятая физическая память, и она важнее «виртуального размера», в который входит ещё не востребованное адресное пространство. free -h даёт общий баланс, vmstat 1 — динамику swap, а dmesg | grep -i oom — кого и когда прибил OOM Killer.',
       'Пример. Процесс подозревается в утечке: watch -n1 \'grep VmRSS /proc/<PID>/status\' покажет монотонный рост RSS. Если параллельно в vmstat поползли si/so и в dmesg появилась запись об oom-kill — это подтверждает, что течь довела систему до нехватки RAM.',
-    ],
-    flow: [
-      { id: 'access', label: 'Обращение к адресу' },
-      { id: 'fault', label: 'Page Fault' },
-      { id: 'ram', label: 'Страница в RAM?' },
-      { id: 'swap', label: 'Подгрузка из swap' },
-      { id: 'oom', label: 'OOM Killer' },
     ],
     table: [
       { entity: 'Virtual', where: '/proc/PID/maps', signal: 'адресное пространство' },
@@ -482,12 +433,6 @@ export const MODULES: Module[] = [
       'D state — частый «висяк». Процесс в состоянии D (uninterruptible sleep) ждёт завершения I/O и не реагирует даже на kill -9. Массовый D state вместе с высоким iowait в top означает, что упёрлись в диск или зависший NFS, а не в CPU.',
       'Пример. Сервис «завис», CPU низкий, а load average высокий. ps -eo pid,stat,wchan,cmd | grep \' D\' покажет процессы в D и точку ожидания в ядре (wchan) — часто это дисковый или сетевой путь. Лечится не киллом процесса, а устранением самой причины I/O.',
     ],
-    flow: [
-      { id: 'pthread', label: 'pthread_mutex' },
-      { id: 'futex', label: 'futex syscall' },
-      { id: 'waitq', label: 'wait queue' },
-      { id: 'wake', label: 'wake up' },
-    ],
     table: [
       { entity: 'Spinlock', where: 'ядро', signal: 'busy-wait, очень коротко' },
       { entity: 'Mutex', where: 'strace futex', signal: 'sleep, userspace/ядро' },
@@ -545,12 +490,6 @@ export const MODULES: Module[] = [
       'Разделяемая память — самый быстрый путь. Shared memory (POSIX-объекты в /dev/shm или общая область через mmap) даёт двум процессам один и тот же кусок физической памяти. После настройки обмен идёт без копирования и без обращения к ядру — поэтому это выбор для больших объёмов и высокой скорости. Плата за скорость — синхронизацию (кто и когда пишет, кто читает) вы организуете сами, обычно семафором (см. модуль «Синхронизация»).',
       'Сокеты — универсальный вариант. Unix-domain сокеты связывают процессы на одном хосте (быстро, с контролем доступа через права на файл сокета), а TCP/UDP-сокеты работают и по сети. Сокеты двунаправленны и умеют передавать между процессами даже открытые файловые дескрипторы, поэтому на них построено большинство современных демонов и шин — systemd, D-Bus, контейнерные рантаймы.',
       'Пример. Выбор по ситуации: связать команды в конвейер — pipe; отдавать данные неродственному демону — FIFO или Unix-сокет; перекачать гигабайты между процессами на одной машине — shared memory; общаться по сети — TCP-сокет. Для расследования: ipcs -a покажет сегменты разделяемой памяти и семафоры, а ss -xnp — какие процессы держат Unix-сокеты, с их PID и именем.',
-    ],
-    flow: [
-      { id: 'pipe', label: 'Pipe |' },
-      { id: 'fifo', label: 'FIFO' },
-      { id: 'shm', label: '/dev/shm' },
-      { id: 'socket', label: 'Unix/TCP socket' },
     ],
     table: [
       { entity: 'Pipe', where: '/proc/PID/fd', signal: 'родственные процессы' },
@@ -612,13 +551,6 @@ export const MODULES: Module[] = [
       'Dentry cache ускоряет разбор пути. Чтобы открыть /home/user/file, ядро разбирает путь покомпонентно и на каждом шаге ищет соответствие имя → inode. Чтобы не читать каталоги с диска каждый раз, результаты кэшируются в dentry cache (его объём виден в slabtop). Поэтому повторный доступ к тем же путям получается быстрым.',
       'Две независимые «ёмкости»: блоки и inode. Место может кончиться двумя разными способами. Блоки данных (df -h) исчерпываются большими файлами. Но число inode (df -i) на ext-разделе фиксировано при создании ФС, и оно заканчивается при множестве мелких файлов — тогда запись падает с «No space left», хотя df -h показывает свободные гигабайты. Классическая ловушка, которую без df -i не разгадать (XFS и Btrfs выделяют inode динамически и ей не подвержены).',
       'Пример. «No space left», а df -h уверяет, что место есть → df -i: скорее всего исчерпаны inode (часто из-за мусора в кэше или почтовом спуле). Удалили большой лог через rm, но место не вернулось → файл всё ещё открыт процессом: lsof | grep deleted найдёт «висящий» дескриптор; место освободится, когда процесс закроет файл или будет перезапущен.',
-    ],
-    flow: [
-      { id: 'path', label: '/home/user/file' },
-      { id: 'vfs', label: 'VFS' },
-      { id: 'dentry', label: 'Dentry cache' },
-      { id: 'inode', label: 'Inode' },
-      { id: 'block', label: 'Блоки диска' },
     ],
     table: [
       { entity: 'VFS', where: '/proc/mounts', signal: 'единый API для всех FS' },
@@ -695,13 +627,6 @@ export const MODULES: Module[] = [
       'Главный симптом — iowait. Когда CPU простаивает в ожидании диска, это видно как iowait в top и vmstat и как высокие await и %util в iostat -x. Высокий iowait означает, что система упёрлась в диск (I/O-bound), а не в процессор. Параллельно стоит проверить здоровье самого носителя — smartctl -a: растущие Reallocated_Sector или ошибки часто и есть причина «тормозов».',
       'Пример. Всё тормозит, CPU свободен. iostat -x 1 показывает %util около 100% и большой await на /dev/sda → диск насыщен. iotop -o назовёт процесс, который реально читает или пишет (например ночной бэкап или индексатор). Если же нагрузки нет, а диск всё равно медленный и в dmesg сыплются ошибки I/O — smartctl -a проверит, не умирает ли носитель.',
     ],
-    flow: [
-      { id: 'app', label: 'read/write' },
-      { id: 'fs', label: 'ext4/xfs' },
-      { id: 'bl', label: 'Block layer' },
-      { id: 'dm', label: 'LVM/LUKS' },
-      { id: 'disk', label: 'SSD/HDD' },
-    ],
     table: [
       { entity: 'Scheduler', where: '/sys/block/*/queue/scheduler', signal: 'mq-deadline' },
       { entity: 'LUKS', where: 'lsblk -f', signal: 'шифрование' },
@@ -762,13 +687,6 @@ export const MODULES: Module[] = [
       'Диагностика — снизу вверх. Линк: ip -br link и ip -br addr — поднят ли интерфейс (не в DOWN). Маршрутизация: ip route — есть ли маршрут и шлюз по умолчанию, плюс ping шлюза. Имена: DNS (getent hosts имя, /etc/resolv.conf) — частая причина ситуации «интернета нет, а ping по IP идёт». Транспорт и приложение: ss -tulnp — слушает ли сервис нужный порт, и не режет ли его фаервол.',
       'Пример. «Сервис не отвечает снаружи». На сервере ss -tlnp: если он слушает 127.0.0.1:порт вместо 0.0.0.0 — наружу он принципиально недоступен (правится в конфиге сервиса). Если слушает 0.0.0.0, но снаружи всё равно тишина — nft list ruleset проверит, не блокирует ли порт фаервол. А неизвестный слушающий порт всегда сопоставляйте с процессом через ss -tlnp (PID и имя) и ls -l /proc/PID/exe.',
     ],
-    flow: [
-      { id: 'nic', label: 'NIC' },
-      { id: 'stack', label: 'TCP/IP stack' },
-      { id: 'nf', label: 'Netfilter' },
-      { id: 'sock', label: 'Socket' },
-      { id: 'app', label: 'Приложение' },
-    ],
     table: [
       { entity: 'Interface', where: 'ip addr', signal: 'DOWN' },
       { entity: 'Listening', where: 'ss -tulnp', signal: '0.0.0.0:22' },
@@ -822,14 +740,6 @@ export const MODULES: Module[] = [
       'Capabilities дробят всемогущество root. Раньше было «или root, или никто». Capabilities разбивают права суперпользователя на отдельные способности: например CAP_NET_BIND_SERVICE (слушать порты ниже 1024), CAP_NET_RAW (сырые сокеты — например traceroute или сниффинг; современный ping их уже не требует), CAP_SYS_ADMIN (почти всё сразу). Демону можно выдать только нужную способность вместо полного root; getcap покажет, у каких бинарников какие capabilities выставлены.',
       'Изоляция: LSM, namespaces, seccomp — фундамент контейнеров. LSM (AppArmor работает по профилям путей, SELinux — по меткам-контекстам) ограничивает то, что процесс вообще может, даже будучи root: состояние смотрят через aa-status или sestatus. Namespaces дают процессу собственный изолированный вид системы — свои PID, сеть, точки монтирования (lsns), а cgroups v2 при этом лимитируют ресурсы. seccomp обрезает набор доступных процессу системных вызовов. Вместе это и есть то, на чём стоят Docker и песочницы systemd.',
       'Пример. Аудит хоста. find / -perm -4000 2>/dev/null сверяют с эталоном — новый SUID-root вне списка штатных подозрителен. sudo -l показывает, что текущему пользователю разрешено через sudo (и нет ли там опасного NOPASSWD на оболочку). aa-status или sestatus подтвердят, что мандатная защита реально включена (enforce), а не просто числится. Для контейнера grep Seccomp /proc/PID/status и lsns скажут, изолирован ли он на самом деле.',
-    ],
-    flow: [
-      { id: 'auth', label: 'PAM auth' },
-      { id: 'dac', label: 'UID/GID/права' },
-      { id: 'cap', label: 'Capabilities' },
-      { id: 'lsm', label: 'AppArmor/SELinux' },
-      { id: 'ns', label: 'Namespaces' },
-      { id: 'sec', label: 'seccomp' },
     ],
     table: [
       { entity: 'DAC', where: 'ls -la, chmod', signal: 'owner/group/other: 644, 755' },
