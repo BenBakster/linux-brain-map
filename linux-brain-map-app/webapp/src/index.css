@@ -405,6 +405,42 @@
     overflow: hidden;
   }
 
+  /* Бейдж слоя для wrapped-flow раскладки (вместо свимлейн-полос): маленький
+     значок в правом верхнем углу узла. Цвет берётся от рамки слоя ниже. */
+  .psy-dnode-badge {
+    position: absolute;
+    top: 2px;
+    right: 5px;
+    font-size: 0.7rem;
+    line-height: 1;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  /* Цвет рамки = слой узла (wrapped-flow). Перебивает kind-рамку рамкой слоя,
+     сохраняя kind-фон (тип узла читается по фону, слой — по цвету рамки+бейджу). */
+  .psy-dnode[data-layer='user'] {
+    border-color: oklch(0.72 0.13 180 / 0.8);
+  }
+  .psy-dnode[data-layer='user'] .psy-dnode-badge {
+    color: oklch(0.78 0.13 180);
+  }
+  .psy-dnode[data-layer='kern'] {
+    border-color: oklch(0.7 0.16 50 / 0.85);
+  }
+  .psy-dnode[data-layer='kern'] .psy-dnode-badge {
+    color: oklch(0.78 0.16 50);
+  }
+  .psy-dnode[data-layer='hw'] {
+    border-color: oklch(0.62 0.16 320 / 0.8);
+  }
+  .psy-dnode[data-layer='hw'] .psy-dnode-badge {
+    color: oklch(0.72 0.16 320);
+  }
+  .psy-dnode[data-layer='other'] {
+    border-color: oklch(0.7 0.05 250 / 0.7);
+  }
+
   .psy-dnode[data-kind='decision'] {
     border-color: oklch(0.78 0.14 82 / 0.7);
     background: linear-gradient(

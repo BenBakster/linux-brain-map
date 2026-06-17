@@ -12,11 +12,31 @@ import { createPortal } from 'react-dom'
 
 import type { Diagram, DiagramNodeKind } from '@/data/diagram'
 import { describeTransitions, layoutDiagram, type DiagramLayout } from '@/lib/diagram-layout'
+import {
+  layoutDiagramFlow,
+  type DiagramFlowLayout,
+  type LayerKey,
+} from '@/lib/diagram-flow-layout'
 import { cn } from '@/lib/utils'
+
+// ПЕРЕКЛЮЧАТЕЛЬ движка раскладки. OFF (false) = существующая раскладка
+// (diagram-layout.ts) — поведение без изменений. ON (true) = прототип
+// wrapped-flow раскладки (diagram-flow-layout.ts): узлы переносятся по рядам,
+// слой кодируется цветом+бейджем, подписи рёбер разводятся без перекрытий.
+// Включает ОРКЕСТРАТОР вручную, заменив false на true.
+export const USE_FLOW_LAYOUT = true
 
 type DiagramViewProps = {
   diagram: Diagram
   className?: string
+}
+
+// Цвет рамки + бейдж слоя для wrapped-flow движка (вместо свимлейн-полос).
+const LAYER_BADGE: Record<LayerKey, { badge: string; title: string }> = {
+  user: { badge: '▲', title: 'userspace (ring 3)' },
+  kern: { badge: '■', title: 'ядро (ring 0)' },
+  hw: { badge: '●', title: 'железо / ресурс' },
+  other: { badge: '◆', title: 'слой' },
 }
 
 // Цвета стрелок совпадают с обводкой соответствующих рёбер в index.css.
@@ -84,11 +104,24 @@ function useElementSize() {
 const DiagramCanvas = memo(function DiagramCanvas({
   layout,
   markerId,
+  revealK,
 }: {
-  layout: DiagramLayout
+  layout: DiagramLayout | DiagramFlowLayout
   markerId: string
+  revealK?: number
 }) {
   const { nodes, edges, lanes, width, height } = layout
+  // Пошаговое раскрытие («по очереди»): revealK === undefined → показываем всё
+  // (превью, классическая раскладка). Иначе — узлы со step < revealK и рёбра, ОБА
+  // конца которых раскрыты. Раскладка считается для всех узлов, поэтому раскрытые
+  // стоят на финальных местах — карта «прорастает» в свою итоговую форму.
+  let visibleIds: Set<string> | null = null
+  if (revealK !== undefined) {
+    visibleIds = new Set<string>()
+    for (const n of nodes) {
+      if (!('step' in n) || (n as { step: number }).step < revealK) visibleIds.add(n.id)
+    }
+  }
   return (
     <div className="relative" style={{ width, height, minWidth: width }}>
       {lanes.map((lane) => (
@@ -124,6 +157,7 @@ const DiagramCanvas = memo(function DiagramCanvas({
             перекрывает любую линию (а не только собственную), и текст ни на что
             не налезает. */}
         {edges.map((edge, index) => {
+          if (visibleIds && !(visibleIds.has(edge.from) && visibleIds.has(edge.to))) return null
           const kind = edge.kind ?? 'seq'
           return (
             <path
@@ -141,6 +175,7 @@ const DiagramCanvas = memo(function DiagramCanvas({
         })}
         {edges.map((edge, index) => {
           if (!edge.label) return null
+          if (visibleIds && !(visibleIds.has(edge.from) && visibleIds.has(edge.to))) return null
           const kind = edge.kind ?? 'seq'
           return (
             <g key={`l-${edge.from}-${edge.to}-${kind}-${edge.label}-${index}`}>
@@ -168,18 +203,30 @@ const DiagramCanvas = memo(function DiagramCanvas({
         })}
       </svg>
 
-      {nodes.map((node) => (
-        <div
-          key={node.id}
-          data-kind={node.kind ?? 'process'}
-          className="psy-dnode"
-          style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
-          title={node.detail ? `${node.label} — ${node.detail}` : node.label}
-        >
-          <span className="psy-dnode-label">{node.label}</span>
-          {node.detail && <span className="psy-dnode-detail">{node.detail}</span>}
-        </div>
-      ))}
+      {nodes.map((node) => {
+        if (visibleIds && !visibleIds.has(node.id)) return null
+        // В wrapped-flow раскладке узел несёт поле layer (слой → цвет+бейдж);
+        // в классической раскладке его нет — тогда бейдж не рисуем.
+        const layer = 'layer' in node ? (node.layer as LayerKey) : undefined
+        return (
+          <div
+            key={node.id}
+            data-kind={node.kind ?? 'process'}
+            data-layer={layer}
+            className="psy-dnode"
+            style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
+            title={node.detail ? `${node.label} — ${node.detail}` : node.label}
+          >
+            {layer && (
+              <span className="psy-dnode-badge" title={LAYER_BADGE[layer].title} aria-hidden>
+                {LAYER_BADGE[layer].badge}
+              </span>
+            )}
+            <span className="psy-dnode-label">{node.label}</span>
+            {node.detail && <span className="psy-dnode-detail">{node.detail}</span>}
+          </div>
+        )
+      })}
     </div>
   )
 })
@@ -187,13 +234,21 @@ const DiagramCanvas = memo(function DiagramCanvas({
 export function DiagramView({ diagram, className }: DiagramViewProps) {
   const rawId = useId()
   const markerId = `arw-${rawId.replace(/[^a-zA-Z0-9]/g, '')}`
+  const [fitRef, fitSize] = useElementSize()
   // Раскладка/переходы зависят только от схемы — мемоизируем: зум/пан вызывают
-  // частые ре-рендеры, пересчитывать граф на каждый кадр незачем.
-  const layout = useMemo(() => layoutDiagram(diagram), [diagram])
+  // частые ре-рендеры, пересчитывать граф на каждый кадр незачем. При флаге
+  // wrapped-flow раскладка дополнительно зависит от ширины контейнера (перенос
+  // рядов): пересчитываем при ресайзе.
+  const layout = useMemo<DiagramLayout | DiagramFlowLayout>(
+    () =>
+      USE_FLOW_LAYOUT
+        ? layoutDiagramFlow(diagram, fitSize.width > 0 ? fitSize.width : undefined)
+        : layoutDiagram(diagram),
+    [diagram, fitSize.width],
+  )
   const transitions = useMemo(() => describeTransitions(diagram), [diagram])
   const { nodes, width, height } = layout
 
-  const [fitRef, fitSize] = useElementSize()
   const [stageRef, stageSize] = useElementSize()
   const [fullscreen, setFullscreen] = useState(false)
   // Полноэкранный вид: масштаб + смещение полотна (translate+scale). null —
@@ -207,34 +262,50 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null)
 
+  // Полноэкранная раскладка пересчитывается под фактическую ширину overlay-стейджа:
+  // wrapped-flow зависит от ширины (перенос рядов), а в превью и фуллскрине она
+  // разная. Вне flow / до измерения стейджа — та же раскладка, что в превью.
+  const fsLayout = useMemo<DiagramLayout | DiagramFlowLayout>(
+    () =>
+      USE_FLOW_LAYOUT && fullscreen && stageSize.width > 0
+        ? layoutDiagramFlow(diagram, stageSize.width)
+        : layout,
+    [diagram, fullscreen, stageSize.width, layout],
+  )
+  const fsWidth = fsLayout.width
+  const fsHeight = fsLayout.height
+  const stepCount = fsLayout.nodes.length
+  // Пошаговое раскрытие в фуллскрине: null = вся карта; K = показаны первые K шагов.
+  const [reveal, setReveal] = useState<number | null>(null)
+
   // Базовый масштаб «вписать целиком» (он же нижняя граница зума): по узкой
   // стороне, мелкую схему не раздуваем выше FS_MAX_SCALE.
   const fitBase =
     stageSize.width > 0 && stageSize.height > 0
-      ? Math.min(stageSize.width / width, stageSize.height / height, FS_MAX_SCALE)
+      ? Math.min(stageSize.width / fsWidth, stageSize.height / fsHeight, FS_MAX_SCALE)
       : 1
   const zoomMax = Math.max(FS_ZOOM_MAX, fitBase)
 
   // Смещение для центрирования полотна данного масштаба в стейдже.
   const centeredOffset = useCallback(
     (s: number) => ({
-      x: (stageSize.width - width * s) / 2,
-      y: (stageSize.height - height * s) / 2,
+      x: (stageSize.width - fsWidth * s) / 2,
+      y: (stageSize.height - fsHeight * s) / 2,
     }),
-    [stageSize.width, stageSize.height, width, height],
+    [stageSize.width, stageSize.height, fsWidth, fsHeight],
   )
 
   // Кламп смещения «как в просмотрщике картинок»: полотно уже вьюпорта по оси
   // → центрируем и пан по этой оси запрещён; шире → край нельзя утащить внутрь.
   const clampOffset = useCallback(
     (s: number, x: number, y: number) => {
-      const sw = width * s
-      const sh = height * s
+      const sw = fsWidth * s
+      const sh = fsHeight * s
       const cx = sw <= stageSize.width ? (stageSize.width - sw) / 2 : clamp(x, stageSize.width - sw, 0)
       const cy = sh <= stageSize.height ? (stageSize.height - sh) / 2 : clamp(y, stageSize.height - sh, 0)
       return { x: cx, y: cy }
     },
-    [stageSize.width, stageSize.height, width, height],
+    [stageSize.width, stageSize.height, fsWidth, fsHeight],
   )
 
   // Привести «сырое» состояние к валидному виду: масштаб в [fitBase, zoomMax],
@@ -432,8 +503,9 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
           type="button"
           className="psy-diagram-fs-btn"
           onClick={() => {
-            // Сброс вида при открытии: каждый раз начинаем с «вписать целиком».
+            // Сброс при открытии: «вписать целиком» + полностью раскрытая карта.
             setView(null)
+            setReveal(null)
             setFullscreen(true)
           }}
           title="Во весь экран"
@@ -513,13 +585,13 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
               <div
                 className="psy-diagram-pan"
                 style={{
-                  width,
-                  height,
+                  width: fsWidth,
+                  height: fsHeight,
                   transform: `translate3d(${v.x}px, ${v.y}px, 0) scale(${v.scale})`,
                   transformOrigin: 'top left',
                 }}
               >
-                <DiagramCanvas layout={layout} markerId={`${markerId}-fs`} />
+                <DiagramCanvas layout={fsLayout} markerId={`${markerId}-fs`} revealK={reveal ?? undefined} />
               </div>
             </div>
 
@@ -556,6 +628,53 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
               >
                 ⟲
               </button>
+              {USE_FLOW_LAYOUT && stepCount > 1 && (
+                <>
+                  <span
+                    aria-hidden
+                    style={{ width: 1, alignSelf: 'stretch', background: 'oklch(0.6 0.12 48 / 0.4)', margin: '0 0.2rem' }}
+                  />
+                  <button
+                    type="button"
+                    className="psy-diagram-fs-btn"
+                    onClick={() => setReveal(1)}
+                    disabled={reveal === 1}
+                    title="К началу — показать только первый шаг"
+                    aria-label="К началу"
+                  >
+                    ⏮
+                  </button>
+                  <button
+                    type="button"
+                    className="psy-diagram-fs-btn"
+                    onClick={() => setReveal((r) => (r === null ? stepCount - 1 : Math.max(1, r - 1)))}
+                    disabled={reveal !== null && reveal <= 1}
+                    title="Скрыть последний шаг"
+                    aria-label="Назад на шаг"
+                  >
+                    ◀
+                  </button>
+                  <span className="psy-diagram-fs-pct" aria-live="polite">
+                    {reveal === null ? `всё · ${stepCount}` : `${reveal} / ${stepCount}`}
+                  </span>
+                  <button
+                    type="button"
+                    className="psy-diagram-fs-btn"
+                    onClick={() =>
+                      setReveal((r) => {
+                        if (r === null) return null
+                        const n = r + 1
+                        return n >= stepCount ? null : n
+                      })
+                    }
+                    disabled={reveal === null}
+                    title="Открыть следующий шаг"
+                    aria-label="Вперёд на шаг"
+                  >
+                    ▶
+                  </button>
+                </>
+              )}
             </div>
           </div>,
           document.body,
