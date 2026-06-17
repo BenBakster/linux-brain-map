@@ -42,14 +42,13 @@ import { MODULES, getModule } from '@/data/modules'
 import { REVIEW_CARDS, type ReviewTrack } from '@/data/review'
 import { PYTHON_SCRIPTS, TOOLKIT_SCRIPTS, bashCmd, pythonCmd } from '@/data/toolkit'
 import {
-  getCompletionPercent,
-  getHygieneChecked,
-  getHygienePercent,
-  getIbmCompletionPercent,
-  getProgress,
-  isModuleComplete,
   markModuleComplete,
   toggleHygieneItem,
+  useCompletionPercent,
+  useHygiene,
+  useHygienePercent,
+  useIbmCompletionPercent,
+  useProgress,
 } from '@/lib/progress'
 import {
   getDueCards,
@@ -66,9 +65,9 @@ const navLinkClass = cn(
 )
 
 export function RootLayout() {
-  const moduleProgress = getCompletionPercent(MODULES.length)
-  const ibmProgress = getIbmCompletionPercent(IBM_TOPICS.length)
-  const hygieneProgress = getHygienePercent(HYGIENE_ITEMS.length)
+  const moduleProgress = useCompletionPercent(MODULES.length)
+  const ibmProgress = useIbmCompletionPercent(IBM_TOPICS.length)
+  const hygieneProgress = useHygienePercent(HYGIENE_ITEMS.length)
 
   return (
     <div className="min-h-svh text-foreground">
@@ -130,7 +129,8 @@ export function RootLayout() {
 }
 
 export function DashboardPage() {
-  const progress = getCompletionPercent(MODULES.length)
+  const { completedModules } = useProgress()
+  const progress = useCompletionPercent(MODULES.length)
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8">
@@ -148,12 +148,12 @@ export function DashboardPage() {
           Каждый модуль: мнемоника → схема потока → таблица команд → квиз → bash-скрипт.
           Прогресс сохраняется локально в браузере.
         </Typography>
-        <ProgressBar value={progress} label={`Пройдено модулей: ${MODULES.filter((m) => isModuleComplete(m.id)).length}/${MODULES.length}`} />
+        <ProgressBar value={progress} label={`Пройдено модулей: ${MODULES.filter((m) => completedModules.includes(m.id)).length}/${MODULES.length}`} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODULES.map((mod) => {
-          const done = isModuleComplete(mod.id)
+          const done = completedModules.includes(mod.id)
           return (
             <Link key={mod.id} to="/module/$moduleId" params={{ moduleId: mod.id }}>
               <Card
@@ -466,8 +466,8 @@ export function ToolkitPage() {
 }
 
 export function HygienePage() {
-  const [checked, setChecked] = useState(() => getHygieneChecked())
-  const percent = getHygienePercent(HYGIENE_ITEMS.length)
+  const checked = useHygiene()
+  const percent = useHygienePercent(HYGIENE_ITEMS.length)
 
   const sections = useMemo(() => {
     const map = new Map<string, typeof HYGIENE_ITEMS>()
@@ -480,7 +480,7 @@ export function HygienePage() {
   }, [])
 
   function handleToggle(id: string) {
-    setChecked(toggleHygieneItem(id))
+    toggleHygieneItem(id)
   }
 
   return (
@@ -529,8 +529,8 @@ export function HygienePage() {
 
 export function IbmPage() {
   const asset = (path: string) => `${import.meta.env.BASE_URL}ibm/${path}`
-  const ibmProgress = getIbmCompletionPercent(IBM_TOPICS.length)
-  const completedTopics = getProgress().completedIbmTopics.length
+  const ibmProgress = useIbmCompletionPercent(IBM_TOPICS.length)
+  const completedTopics = useProgress().completedIbmTopics.length
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8">
