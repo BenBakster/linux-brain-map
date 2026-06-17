@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { createPortal } from 'react-dom'
 
 import type { Diagram, DiagramNodeKind } from '@/data/diagram'
@@ -34,8 +43,15 @@ const KIND_RU: Record<DiagramNodeKind, string> = {
 // Превью вписывается в ширину колонки; ниже этого масштаба не ужимаем —
 // мелкий текст нечитаем, лучше отдать пользователю горизонтальный скролл.
 const FIT_FLOOR = 0.55
-// Во весь экран маленькую схему увеличиваем, но не до гротеска.
+// Во весь экран маленькую схему увеличиваем «вписать целиком», но не до
+// гротеска; это же значение — нижняя граница ручного зума.
 const FS_MAX_SCALE = 2.4
+// Потолок ручного зума (доля натурального размера полотна).
+const FS_ZOOM_MAX = 4
+// Шаг панорамы стрелками клавиатуры, px экрана.
+const PAN_STEP = 60
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
 
 /**
  * Ширина/высота элемента через ResizeObserver. ref-callback (а не useEffect)
@@ -62,8 +78,16 @@ function useElementSize() {
 }
 
 /** Полотно схемы: полосы-дорожки, рёбра-стрелки, узлы. Чистый рендер раскладки —
- *  переиспользуется и в превью, и в полноэкранном overlay. */
-function DiagramCanvas({ layout, markerId }: { layout: DiagramLayout; markerId: string }) {
+ *  переиспользуется и в превью, и в полноэкранном overlay. memo: зум/пан дёргают
+ *  множество ре-рендеров родителя, а само полотно от них не меняется (transform
+ *  живёт на обёртке) — пересобирать весь SVG на каждый кадр незачем. */
+const DiagramCanvas = memo(function DiagramCanvas({
+  layout,
+  markerId,
+}: {
+  layout: DiagramLayout
+  markerId: string
+}) {
   const { nodes, edges, lanes, width, height } = layout
   return (
     <div className="relative" style={{ width, height, minWidth: width }}>
@@ -158,43 +182,224 @@ function DiagramCanvas({ layout, markerId }: { layout: DiagramLayout; markerId: 
       ))}
     </div>
   )
-}
+})
 
 export function DiagramView({ diagram, className }: DiagramViewProps) {
   const rawId = useId()
   const markerId = `arw-${rawId.replace(/[^a-zA-Z0-9]/g, '')}`
-  const layout = layoutDiagram(diagram)
+  // Раскладка/переходы зависят только от схемы — мемоизируем: зум/пан вызывают
+  // частые ре-рендеры, пересчитывать граф на каждый кадр незачем.
+  const layout = useMemo(() => layoutDiagram(diagram), [diagram])
+  const transitions = useMemo(() => describeTransitions(diagram), [diagram])
   const { nodes, width, height } = layout
-  const transitions = describeTransitions(diagram)
 
   const [fitRef, fitSize] = useElementSize()
   const [stageRef, stageSize] = useElementSize()
   const [fullscreen, setFullscreen] = useState(false)
+  // Полноэкранный вид: масштаб + смещение полотна (translate+scale). null —
+  // ещё не вписан (стейдж не измерен); первый кадр считаем по fitBase инлайн.
+  const [view, setView] = useState<{ scale: number; x: number; y: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const stageElRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null)
 
-  // Пока открыт overlay: Esc закрывает, фон не прокручивается, фокус заперт
-  // внутри (в модалке один фокусируемый элемент — ✕), на закрытии — назад на ⛶.
+  // Базовый масштаб «вписать целиком» (он же нижняя граница зума): по узкой
+  // стороне, мелкую схему не раздуваем выше FS_MAX_SCALE.
+  const fitBase =
+    stageSize.width > 0 && stageSize.height > 0
+      ? Math.min(stageSize.width / width, stageSize.height / height, FS_MAX_SCALE)
+      : 1
+  const zoomMax = Math.max(FS_ZOOM_MAX, fitBase)
+
+  // Смещение для центрирования полотна данного масштаба в стейдже.
+  const centeredOffset = useCallback(
+    (s: number) => ({
+      x: (stageSize.width - width * s) / 2,
+      y: (stageSize.height - height * s) / 2,
+    }),
+    [stageSize.width, stageSize.height, width, height],
+  )
+
+  // Кламп смещения «как в просмотрщике картинок»: полотно уже вьюпорта по оси
+  // → центрируем и пан по этой оси запрещён; шире → край нельзя утащить внутрь.
+  const clampOffset = useCallback(
+    (s: number, x: number, y: number) => {
+      const sw = width * s
+      const sh = height * s
+      const cx = sw <= stageSize.width ? (stageSize.width - sw) / 2 : clamp(x, stageSize.width - sw, 0)
+      const cy = sh <= stageSize.height ? (stageSize.height - sh) / 2 : clamp(y, stageSize.height - sh, 0)
+      return { x: cx, y: cy }
+    },
+    [stageSize.width, stageSize.height, width, height],
+  )
+
+  // Привести «сырое» состояние к валидному виду: масштаб в [fitBase, zoomMax],
+  // смещение — в границы клампа. Используется и для рендера, и как база любой
+  // мутации → вид само-исцеляется после ресайза без эффектов-сеттеров.
+  const deriveView = useCallback(
+    (raw: { scale: number; x: number; y: number } | null) => {
+      const base = raw ?? { scale: fitBase, ...centeredOffset(fitBase) }
+      const s = clamp(base.scale, fitBase, zoomMax)
+      return { scale: s, ...clampOffset(s, base.x, base.y) }
+    },
+    [fitBase, zoomMax, centeredOffset, clampOffset],
+  )
+
+  // Зум множителем с якорем (cx,cy) в координатах стейджа: точка под якорем
+  // остаётся на месте. Без якоря — центр стейджа (кнопки/клавиатура).
+  const zoomByFactor = useCallback(
+    (factor: number, cx?: number, cy?: number) => {
+      setView((prev) => {
+        const cur = deriveView(prev)
+        const next = clamp(cur.scale * factor, fitBase, zoomMax)
+        if (next === cur.scale) return cur
+        const ax = cx ?? stageSize.width / 2
+        const ay = cy ?? stageSize.height / 2
+        const k = next / cur.scale
+        return { scale: next, ...clampOffset(next, ax - (ax - cur.x) * k, ay - (ay - cur.y) * k) }
+      })
+    },
+    [deriveView, fitBase, zoomMax, clampOffset, stageSize.width, stageSize.height],
+  )
+
+  // Абсолютное смещение (перетаскивание), масштаб не трогаем.
+  const panTo = useCallback(
+    (x: number, y: number) =>
+      setView((prev) => {
+        const cur = deriveView(prev)
+        return { scale: cur.scale, ...clampOffset(cur.scale, x, y) }
+      }),
+    [deriveView, clampOffset],
+  )
+
+  // Относительное смещение (стрелки клавиатуры).
+  const panBy = useCallback(
+    (dx: number, dy: number) =>
+      setView((prev) => {
+        const cur = deriveView(prev)
+        return { scale: cur.scale, ...clampOffset(cur.scale, cur.x + dx, cur.y + dy) }
+      }),
+    [deriveView, clampOffset],
+  )
+
+  const resetView = useCallback(
+    () => setView({ scale: fitBase, ...centeredOffset(fitBase) }),
+    [fitBase, centeredOffset],
+  )
+
+  // Открытие/закрытие overlay: блок прокрутки фона, фокус на ✕ при открытии,
+  // на закрытии — назад на ⛶ (сам вид сбрасывается в обработчике открытия).
+  // Инициализация и ресайз не требуют эффектов: рендер всегда берёт
+  // deriveView(view), а мутации стартуют от него же → вид валиден сам по себе.
+  useEffect(() => {
+    if (!fullscreen) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeRef.current?.focus()
+    return () => {
+      document.body.style.overflow = prevOverflow
+      triggerRef.current?.focus()
+    }
+  }, [fullscreen])
+
+  // Клавиатура в overlay: Esc — закрыть; Tab — ловушка фокуса по всем кнопкам;
+  // +/-/0 — зум/сброс; стрелки — пан. Переподписка при смене колбэков (ресайз).
   useEffect(() => {
     if (!fullscreen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setFullscreen(false)
-      } else if (e.key === 'Tab') {
+        return
+      }
+      if (e.key === 'Tab') {
+        const focusables = overlayRef.current?.querySelectorAll<HTMLElement>('button:not([disabled])')
+        if (!focusables || focusables.length === 0) return
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        const active = document.activeElement
+        if (e.shiftKey && active === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault()
+          first.focus()
+        } else if (active instanceof Node && !overlayRef.current?.contains(active)) {
+          e.preventDefault()
+          first.focus()
+        }
+        return
+      }
+      if (e.key === '+' || e.key === '=') {
         e.preventDefault()
-        closeRef.current?.focus()
+        zoomByFactor(1.25)
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        zoomByFactor(1 / 1.25)
+      } else if (e.key === '0') {
+        e.preventDefault()
+        resetView()
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        const dx = e.key === 'ArrowLeft' ? PAN_STEP : e.key === 'ArrowRight' ? -PAN_STEP : 0
+        const dy = e.key === 'ArrowUp' ? PAN_STEP : e.key === 'ArrowDown' ? -PAN_STEP : 0
+        panBy(dx, dy)
       }
     }
     window.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    closeRef.current?.focus()
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-      triggerRef.current?.focus()
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fullscreen, zoomByFactor, resetView, panBy])
+
+  // Зум колесом к курсору. React делает onWheel ПАССИВНЫМ → preventDefault там
+  // не сработает; вешаем ручной non-passive листенер на узел сцены.
+  useEffect(() => {
+    const node = stageElRef.current
+    if (!fullscreen || !node) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = node.getBoundingClientRect()
+      // Нормализуем deltaMode (строки/страницы) к пикселям, иначе колесо «мыши
+      // по строкам» почти не зумит.
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? node.clientHeight : 1
+      const factor = Math.exp(-e.deltaY * unit * 0.0015)
+      zoomByFactor(factor, e.clientX - rect.left, e.clientY - rect.top)
     }
-  }, [fullscreen])
+    node.addEventListener('wheel', onWheel, { passive: false })
+    return () => node.removeEventListener('wheel', onWheel)
+  }, [fullscreen, zoomByFactor])
+
+  // Объединённый ref сцены: и для ResizeObserver, и для прямого доступа к узлу
+  // (ручной wheel-листенер выше).
+  const setStageRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      stageElRef.current = el
+      stageRef(el)
+    },
+    [stageRef],
+  )
+
+  const onPointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      const d = dragRef.current
+      if (!d) return
+      panTo(d.ox + (e.clientX - d.px), d.oy + (e.clientY - d.py))
+    },
+    [panTo],
+  )
+
+  const onPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return
+    dragRef.current = null
+    setDragging(false)
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // указатель мог быть уже отпущен — не критично
+    }
+  }, [])
 
   if (nodes.length === 0) {
     return <p className="text-sm text-muted-foreground">Схема пока не задана.</p>
@@ -205,11 +410,10 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
 
   // Превью: вписать в ширину колонки (масштаб ≤ 1, не ниже пола → иначе скролл).
   const fitScale = fitSize.width > 0 ? Math.max(FIT_FLOOR, Math.min(1, fitSize.width / width)) : 1
-  // Overlay: вписать ЦЕЛИКОМ по обеим сторонам, мелкую схему увеличить до потолка.
-  const fsScale =
-    stageSize.width > 0 && stageSize.height > 0
-      ? Math.min(stageSize.width / width, stageSize.height / height, FS_MAX_SCALE)
-      : 1
+  // Полноэкранный вид: всегда валидный (вписан по умолчанию, поджат под границы).
+  const v = deriveView(view)
+  const atMin = v.scale <= fitBase + 1e-3
+  const atMax = v.scale >= zoomMax - 1e-3
 
   return (
     <div className={cn('grid min-w-0 gap-3', className)}>
@@ -227,7 +431,11 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
           ref={triggerRef}
           type="button"
           className="psy-diagram-fs-btn"
-          onClick={() => setFullscreen(true)}
+          onClick={() => {
+            // Сброс вида при открытии: каждый раз начинаем с «вписать целиком».
+            setView(null)
+            setFullscreen(true)
+          }}
           title="Во весь экран"
           aria-label="Показать схему во весь экран"
         >
@@ -266,6 +474,7 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
       {fullscreen &&
         createPortal(
           <div
+            ref={overlayRef}
             className="psy-diagram-overlay"
             role="dialog"
             aria-modal="true"
@@ -285,15 +494,68 @@ export function DiagramView({ diagram, className }: DiagramViewProps) {
             >
               ✕
             </button>
-            <div ref={stageRef} className="psy-diagram-overlay-stage">
+
+            <div
+              ref={setStageRef}
+              className="psy-diagram-overlay-stage"
+              data-dragging={dragging ? 'true' : undefined}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return
+                dragRef.current = { px: e.clientX, py: e.clientY, ox: v.x, oy: v.y }
+                setDragging(true)
+                e.currentTarget.setPointerCapture(e.pointerId)
+              }}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+            >
               <div
-                style={{ width: width * fsScale, height: height * fsScale }}
-                onClick={(e) => e.stopPropagation()}
+                className="psy-diagram-pan"
+                style={{
+                  width,
+                  height,
+                  transform: `translate3d(${v.x}px, ${v.y}px, 0) scale(${v.scale})`,
+                  transformOrigin: 'top left',
+                }}
               >
-                <div style={{ width, height, transform: `scale(${fsScale})`, transformOrigin: 'top left' }}>
-                  <DiagramCanvas layout={layout} markerId={`${markerId}-fs`} />
-                </div>
+                <DiagramCanvas layout={layout} markerId={`${markerId}-fs`} />
               </div>
+            </div>
+
+            <div className="psy-diagram-fs-toolbar" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="psy-diagram-fs-btn"
+                onClick={() => zoomByFactor(1 / 1.25)}
+                disabled={atMin}
+                title="Отдалить (−)"
+                aria-label="Отдалить"
+              >
+                −
+              </button>
+              <span className="psy-diagram-fs-pct" aria-live="polite">
+                {Math.round(v.scale * 100)}%
+              </span>
+              <button
+                type="button"
+                className="psy-diagram-fs-btn"
+                onClick={() => zoomByFactor(1.25)}
+                disabled={atMax}
+                title="Приблизить (+)"
+                aria-label="Приблизить"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="psy-diagram-fs-btn"
+                onClick={resetView}
+                title="Вписать целиком (0)"
+                aria-label="Вписать схему целиком"
+              >
+                ⟲
+              </button>
             </div>
           </div>,
           document.body,
