@@ -1,6 +1,6 @@
 # 10 — Блочный I/O
 
-**Мнемоника: BDF** — *Block layer → Device → Filesystem*
+**Мнемоника: FBD** — *Filesystem → Block layer → Device*
 
 ## Схема I/O stack
 

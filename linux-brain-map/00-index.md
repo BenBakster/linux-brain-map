@@ -15,7 +15,7 @@
 | 07 | [Синхронизация](07-sync/README.md) | **MSFR** | `user_audit.sh` | — | — |
 | 08 | [IPC](08-ipc/README.md) | **PFMS** | `log_analyzer.sh` | — | — |
 | 09 | [Файловые системы](09-filesystems/README.md) | **VID** | `hash_checker.sh` | — | checklist §5 |
-| 10 | [Блочный I/O](10-block-io/README.md) | **BDF** | `hash_checker.sh` | — | — |
+| 10 | [Блочный I/O](10-block-io/README.md) | **FBD** | `hash_checker.sh` | — | — |
 | 11 | [Сеть](11-networking/README.md) | **STN** | `port_scanner.sh` | `port_scan.py` | home-network-audit |
 | 12 | [Безопасность](12-security/README.md) | **CAPNS** | все скрипты | `cve_monitor.py` | ncsc-10-steps |
 
