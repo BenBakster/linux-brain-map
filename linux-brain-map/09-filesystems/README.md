@@ -30,7 +30,7 @@ flowchart LR
 | `/etc` | конфигурация | immutable, hash check |
 | `/bin`, `/sbin` | бинарники | SUID audit |
 | `/home` | данные пользователей | права 700 |
-| `/tmp` | временные | sticky bit, noexec |
+| `/tmp` | временные | sticky bit (дефолт); noexec — опц. харденинг |
 | `/var/log` | журналы | ротация, анализ |
 | `/proc`, `/sys` | интерфейс ядра | виртуальные |
 

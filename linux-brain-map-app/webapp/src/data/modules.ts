@@ -561,7 +561,7 @@ export const MODULES: Module[] = [
       { entity: '/etc', where: 'hash baseline', signal: 'конфигурация — защищать' },
       { entity: '/bin, /sbin', where: 'find -perm -4000', signal: 'бинарники — SUID audit' },
       { entity: '/home', where: 'ls -la /home', signal: 'права 700 на каталоги' },
-      { entity: '/tmp', where: 'ls -ld /tmp', signal: 'sticky bit + noexec' },
+      { entity: '/tmp', where: 'ls -ld /tmp; findmnt /tmp', signal: 'sticky bit (дефолт); noexec — опц. харденинг, не дефолт' },
       { entity: '/var/log', where: 'ls /var/log', signal: 'ротация, анализ' },
       { entity: '/proc, /sys', where: 'cat /proc/mounts', signal: 'интерфейс ядра — виртуальные' },
     ],
