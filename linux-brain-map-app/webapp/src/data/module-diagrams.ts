@@ -534,7 +534,7 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
       {
         id: 'class',
         label: 'Какой класс задачи?',
-        detail: 'Планировщик опрашивает классы по приоритету: сначала RT, потом CFS/EEVDF',
+        detail: 'Планировщик опрашивает классы по приоритету: сначала RT, потом обычный класс (EEVDF)',
         kind: 'decision',
         lane: 'kernel',
       },
@@ -614,7 +614,7 @@ export const MODULE_DIAGRAMS: Record<number, Diagram> = {
         from: 'throttle',
         to: 'tree',
         kind: 'branch',
-        label: 'лимит исчерпан → RT ждёт нового периода, CFS получает ядро',
+        label: 'лимит исчерпан → RT ждёт нового периода, обычные получают ядро',
       },
       { from: 'tree', to: 'quota', kind: 'seq' },
       { from: 'quota', to: 'pick', kind: 'branch', label: 'в пределах квоты' },

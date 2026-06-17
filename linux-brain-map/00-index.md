@@ -10,7 +10,7 @@
 | 02 | [Загрузка](02-boot/README.md) | **UGKIS** | `user_audit.sh` | — | checklist §2 |
 | 03 | [Системные вызовы](03-syscalls/README.md) | **UKU** | `user_audit.sh` | `log_anomaly.py` | — |
 | 04 | [Процессы](04-processes/README.md) | **FET** | `user_audit.sh` | `log_anomaly.py` | checklist §3 |
-| 05 | [Планировщик](05-scheduler/README.md) | **CFS** | `user_audit.sh` | `log_anomaly.py` | — |
+| 05 | [Планировщик](05-scheduler/README.md) | **EEVDF** | `user_audit.sh` | `log_anomaly.py` | — |
 | 06 | [Память](06-memory/README.md) | **VPS** | `log_analyzer.sh` | `log_anomaly.py` | checklist §4 |
 | 07 | [Синхронизация](07-sync/README.md) | **MSFR** | `user_audit.sh` | — | — |
 | 08 | [IPC](08-ipc/README.md) | **PFMS** | `log_analyzer.sh` | — | — |

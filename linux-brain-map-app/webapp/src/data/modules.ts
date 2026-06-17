@@ -287,9 +287,9 @@ export const MODULES: Module[] = [
   {
     id: 'scheduler',
     number: 5,
-    title: 'Планировщик CFS',
-    mnemonic: 'CFS',
-    mnemonicExpansion: 'Completely Fair Scheduler',
+    title: 'Планировщик процессов',
+    mnemonic: 'EEVDF',
+    mnemonicExpansion: 'Earliest Eligible Virtual Deadline First',
     epigraph: {
       text: 'CFS, по сути, моделирует „идеальный, точный многозадачный процессор“ на реальном железе.',
       author: 'Инго Молнар, документация CFS',
@@ -304,7 +304,7 @@ export const MODULES: Module[] = [
     ],
     table: [
       { entity: 'nice', where: 'ps -eo ni,pri,cmd', signal: '-20 высший приоритет' },
-      { entity: 'policy', where: 'chrt -p PID', signal: 'RT вытесняет CFS' },
+      { entity: 'policy', where: 'chrt -p PID', signal: 'RT вытесняет обычные' },
       { entity: 'cgroup', where: 'cpu.max', signal: 'лимит в Docker' },
     ],
     decisions: [

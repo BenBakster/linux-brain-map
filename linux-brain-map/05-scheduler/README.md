@@ -1,17 +1,17 @@
-# 05 — Планировщик (CFS)
+# 05 — Планировщик процессов (EEVDF)
 
-**Мнемоника: CFS = Completely Fair Scheduler — «дерево справедливости»**
+**Мнемоника: EEVDF = Earliest Eligible Virtual Deadline First — «дерево справедливости» (с ядра 6.6; ранее CFS)**
 
 ## Схема
 
 ```mermaid
 flowchart TB
-    RQ[Runqueue] --> CFS[CFS: red-black tree по vruntime]
-    CFS --> CPU[CPU core]
+    RQ[Runqueue] --> EEVDF[EEVDF: red-black tree по vruntime]
+    EEVDF --> CPU[CPU core]
     RT[Real-time SCHED_FIFO/RR] --> CPU
     CPU --> PROC[Текущий процесс]
-    NICE[nice -20..19] --> CFS
-    CGROUP[cpu.cfs_quota] --> CFS
+    NICE[nice -20..19] --> EEVDF
+    CGROUP[cpu.cfs_quota] --> EEVDF
 ```
 
 ## Таблица приоритетов
@@ -20,7 +20,7 @@ flowchart TB
 |----------|----------|---------|--------|
 | nice | -20 (высший) … 19 (низший) | `nice -n 10 cmd` | вес CPU |
 | priority | 0–139 (внутр. ядра) | `ps -eo pid,ni,pri,cmd` | в столбце `pri` больше = важнее (инверсия внутр. шкалы) |
-| policy | SCHED_OTHER/FIFO/RR | `chrt -p PID` | RT вытесняет CFS |
+| policy | SCHED_OTHER/FIFO/RR | `chrt -p PID` | RT вытесняет обычные |
 | cgroup CPU | quota/period | `cat /sys/fs/cgroup/.../cpu.max` | лимит в Docker |
 
 ## Дерево решений
