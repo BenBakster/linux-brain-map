@@ -44,6 +44,9 @@ export function RootLayout() {
             <Link to="/toolkit" className={navLinkClass}>
               Toolkit
             </Link>
+            <Link to="/audit" className={navLinkClass}>
+              Аудит
+            </Link>
             <Link to="/hygiene" className={navLinkClass}>
               Hygiene
             </Link>
