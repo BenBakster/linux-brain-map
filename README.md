@@ -1,6 +1,6 @@
 # Linux Security Learning Stack
 
-Связанный набор из 4 проектов + **веб-приложение** на [vibe](https://github.com/di-sukharev/vibe).
+**Веб-приложение** на [vibe](https://github.com/di-sukharev/vibe) (интерактивные модули + hygiene) + два набора CLI-инструментов: Bash Toolkit и Python Automation.
 
 ```
 Кетов (мнемосхемы) → Bash Toolkit → Python Automation → Cyber Hygiene
@@ -23,10 +23,8 @@ bun run dev:webapp
 | Папка | Назначение | Старт |
 |-------|------------|-------|
 | **[linux-brain-map-app/](linux-brain-map-app/)** | **Веб-UI (vibe + React)** | [README](linux-brain-map-app/README.md) |
-| [linux-brain-map/](linux-brain-map/) | Markdown-архив модулей | [00-index.md](linux-brain-map/00-index.md) |
 | [bash-security-toolkit/](bash-security-toolkit/) | CLI-инструменты Blue Team | [README.md](bash-security-toolkit/README.md) |
 | [python-security/](python-security/) | Автоматизация и мониторинг | [README.md](python-security/README.md) |
-| [cyber-hygiene/](cyber-hygiene/) | Чеклисты (исходник данных) | [checklist.md](cyber-hygiene/checklist.md) |
 
 ## Маршрут на 4 недели
 
