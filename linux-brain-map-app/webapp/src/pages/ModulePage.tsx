@@ -181,7 +181,7 @@ export function ModulePage() {
                 <div className="relative flex items-center justify-center rounded-lg border bg-black/40 overflow-hidden select-none">
                   {/* Изображение железного прибора */}
                   <img 
-                    src={mod.hardwareMap.image} 
+                    src={`${import.meta.env.BASE_URL.replace(/\/$/, '')}${mod.hardwareMap.image}`} 
                     alt="Схема физического уровня устройства" 
                     className="max-h-[480px] object-contain w-full" 
                   />
