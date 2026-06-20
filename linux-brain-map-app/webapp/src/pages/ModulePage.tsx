@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Typography } from '@/components/ui/typography'
 import { MODULE_DIAGRAMS } from '@/data/module-diagrams'
 import { MODULES, getModule } from '@/data/modules'
-import { bashCmd, pythonCmd } from '@/data/toolkit'
+import { pythonCmd, TOOLKIT_SCRIPTS, PYTHON_SCRIPTS } from '@/data/toolkit'
 import { markModuleComplete } from '@/lib/progress'
 
 export function ModulePage() {
@@ -45,11 +45,11 @@ export function ModulePage() {
 
   const prev = MODULES.find((m) => m.number === mod.number - 1)
   const next = MODULES.find((m) => m.number === mod.number + 1)
-  const runCmd = mod.bashScript
-    ? bashCmd(`./${mod.bashScript}`)
-    : mod.commands[0]
   const explainerSeen = new Set<string>()
   const diagram = MODULE_DIAGRAMS[mod.number]
+
+  const bashScriptMeta = mod.bashScript ? TOOLKIT_SCRIPTS.find((s) => s.file === mod.bashScript) : null
+  const pythonScriptMeta = mod.pythonScript ? PYTHON_SCRIPTS.find((s) => s.file === mod.pythonScript) : null
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6">
@@ -173,37 +173,145 @@ export function ModulePage() {
         <TabsContent value="practice">
           <Card>
             <CardHeader>
-              <CardTitle>Команды и скрипты</CardTitle>
+              <CardTitle>Практика и автоматизация</CardTitle>
               <CardDescription>
-                Скрипты запускаются локально в терминале после git clone. В браузере терминала нет.
-                Перейди в папку репозитория: <code>cd bash-security-toolkit</code> или <code>cd python-security</code>.
+                Для закрепления теории выполните практические задания на реальной системе с помощью наших скриптов.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              {mod.commands.map((cmd) => (
-                <div key={cmd} className="flex flex-wrap items-center gap-2 rounded-lg bg-muted p-3">
-                  <code className="flex-1 font-mono text-sm">{cmd}</code>
-                  <CopyButton text={cmd} />
-                </div>
-              ))}
-              {mod.bashScript && (
-                <div className="psy-highlight-card flex flex-wrap items-center gap-2 rounded-lg p-3">
-                  <code className="flex-1 font-mono text-sm">{runCmd}</code>
-                  <CopyButton text={runCmd} label="Копировать скрипт" />
-                </div>
-              )}
-              {mod.pythonScript && (
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
-                  <code className="flex-1 font-mono text-sm">
-                    {pythonCmd(mod.pythonScript)}
-                  </code>
-                  <CopyButton text={pythonCmd(mod.pythonScript)} />
+            <CardContent className="grid gap-6">
+              {/* Диагностические команды */}
+              {mod.commands.length > 0 && (
+                <div className="grid gap-3">
+                  <Typography variant="h4" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    Базовые команды диагностики (запустите в терминале):
+                  </Typography>
+                  {mod.commands.map((cmd) => (
+                    <div key={cmd} className="flex flex-wrap items-center gap-2 rounded-lg bg-muted p-3">
+                      <code className="flex-1 font-mono text-sm">{cmd}</code>
+                      <CopyButton text={cmd} />
+                    </div>
+                  ))}
                 </div>
               )}
+
+              {/* Раздел со скриптом Bash */}
+              {bashScriptMeta && (
+                <div className="psy-highlight-card rounded-lg border border-accent/20 bg-accent/5 p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <Badge className="mb-1 bg-accent/20 text-accent hover:bg-accent/30 font-mono">BASH SCRIPT</Badge>
+                      <Typography variant="h3" className="text-lg font-bold">{bashScriptMeta.name}</Typography>
+                    </div>
+                  </div>
+                  <Typography tone="muted" className="mb-4 text-sm">
+                    {bashScriptMeta.description}. Скрипт проверит вашу систему на соответствие стандартам безопасности и выявит аномалии для этого модуля.
+                  </Typography>
+
+                  <Tabs defaultValue="curl" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-muted/60">
+                      <TabsTrigger value="curl">Быстрый запуск (без клонирования)</TabsTrigger>
+                      <TabsTrigger value="local">Из клонированного репозитория</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="curl" className="mt-3 space-y-3">
+                      <Typography variant="body" tone="muted">
+                        Вы можете скачать и запустить только этот скрипт одной строкой:
+                      </Typography>
+                      <div className="flex flex-wrap items-center gap-2 rounded bg-muted p-2 font-mono text-xs">
+                        <code className="flex-1">{`curl -O https://raw.githubusercontent.com/BenBakster/linux-brain-map/main/bash-security-toolkit/${bashScriptMeta.file} && chmod +x ${bashScriptMeta.file} && ./${bashScriptMeta.file}`}</code>
+                        <CopyButton text={`curl -O https://raw.githubusercontent.com/BenBakster/linux-brain-map/main/bash-security-toolkit/${bashScriptMeta.file} && chmod +x ${bashScriptMeta.file} && ./${bashScriptMeta.file}`} />
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Или скачайте через браузер:</span>
+                        <a 
+                          href={`https://raw.githubusercontent.com/BenBakster/linux-brain-map/main/bash-security-toolkit/${bashScriptMeta.file}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-accent hover:underline font-semibold"
+                        >
+                          Скачать {bashScriptMeta.file}
+                        </a>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="local" className="mt-3 space-y-3">
+                      <Typography variant="body" tone="muted">
+                        Если вы работаете в локальном клоне репозитория:
+                      </Typography>
+                      <div className="flex flex-wrap items-center gap-2 rounded bg-muted p-2 font-mono text-xs">
+                        <code className="flex-1">{`cd bash-security-toolkit && ./${bashScriptMeta.file}`}</code>
+                        <CopyButton text={`cd bash-security-toolkit && ./${bashScriptMeta.file}`} />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              )}
+
+              {/* Раздел со скриптом Python */}
+              {pythonScriptMeta && (
+                <div className="rounded-lg border border-border p-4 bg-muted/20">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <Badge className="mb-1" variant="outline">PYTHON SCRIPT</Badge>
+                      <Typography variant="h3" className="text-lg font-bold">{pythonScriptMeta.name}</Typography>
+                    </div>
+                  </div>
+                  <Typography tone="muted" className="mb-4 text-sm">
+                    {pythonScriptMeta.description}. Используется для автоматизации сбора метрик и мониторинга безопасности.
+                  </Typography>
+
+                  <Tabs defaultValue="curl" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-muted/60">
+                      <TabsTrigger value="curl">Быстрый запуск (без клонирования)</TabsTrigger>
+                      <TabsTrigger value="local">Из клонированного репозитория</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="curl" className="mt-3 space-y-3">
+                      <Typography variant="body" tone="muted">
+                        Скачайте скрипт напрямую в терминале:
+                      </Typography>
+                      <div className="flex flex-wrap items-center gap-2 rounded bg-muted p-2 font-mono text-xs">
+                        <code className="flex-1">{`curl -O https://raw.githubusercontent.com/BenBakster/linux-brain-map/main/python-security/${pythonScriptMeta.file}`}</code>
+                        <CopyButton text={`curl -O https://raw.githubusercontent.com/BenBakster/linux-brain-map/main/python-security/${pythonScriptMeta.file}`} />
+                      </div>
+                      <Typography variant="body" tone="muted">
+                        Запуск (требует установленной библиотеки <code>requests</code> для некоторых скриптов):
+                      </Typography>
+                      <div className="flex flex-wrap items-center gap-2 rounded bg-muted p-2 font-mono text-xs">
+                        <code className="flex-1">{pythonCmd(pythonScriptMeta.usage[0])}</code>
+                        <CopyButton text={pythonCmd(pythonScriptMeta.usage[0])} />
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Или скачайте через браузер:</span>
+                        <a 
+                          href={`https://raw.githubusercontent.com/BenBakster/linux-brain-map/main/python-security/${pythonScriptMeta.file}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-accent hover:underline font-semibold"
+                        >
+                          Скачать {pythonScriptMeta.file}
+                        </a>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="local" className="mt-3 space-y-3">
+                      <Typography variant="body" tone="muted">
+                        Если вы работаете в локальном клоне репозитория:
+                      </Typography>
+                      <div className="flex flex-wrap items-center gap-2 rounded bg-muted p-2 font-mono text-xs">
+                        <code className="flex-1">{`cd python-security && python3 ${pythonScriptMeta.usage[0]}`}</code>
+                        <CopyButton text={`cd python-security && python3 ${pythonScriptMeta.usage[0]}`} />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              )}
+
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => markModuleComplete(mod.id)}
+                className="w-full sm:w-auto"
               >
                 Отметить модуль пройденным
               </Button>
