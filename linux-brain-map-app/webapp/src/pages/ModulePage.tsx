@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 
+import { cn } from '@/lib/utils'
 import { CopyButton } from '@/components/CopyButton'
 import { DiagramView, decisionsToDiagram } from '@/components/DiagramView'
 import { linkifyProse } from '@/components/GlossaryLinker'
@@ -45,6 +47,12 @@ export function ModulePage() {
 
   const prev = MODULES.find((m) => m.number === mod.number - 1)
   const next = MODULES.find((m) => m.number === mod.number + 1)
+  
+  const [selectedHardware, setSelectedHardware] = useState<string | null>(null)
+  useEffect(() => {
+    setSelectedHardware(null)
+  }, [moduleId])
+
   const explainerSeen = new Set<string>()
   const diagram = MODULE_DIAGRAMS[mod.number]
 
@@ -135,37 +143,79 @@ export function ModulePage() {
                   <span>🔌 Физический уровень и приборы</span>
                 </CardTitle>
                 <CardDescription>
-                  Как концепции операционной системы соотносятся с реальными физическими чипами и платами на вашем компьютере.
+                  Нажмите на элемент списка или выделите область на схеме платы для изучения его работы.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-6 md:grid-cols-2">
-                <div className="flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-4">
                   <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 leading-relaxed text-muted-foreground text-sm">
                     {mod.hardwareMap.text}
                   </div>
                   
                   <div className="grid gap-3">
-                    {mod.hardwareMap.details.map((detail) => (
-                      <div key={detail.name} className="rounded-lg border p-3.5 bg-muted/30 hover:border-accent/20 transition-colors">
-                        <Typography variant="emphasis" className="text-accent font-semibold block mb-1 text-sm font-mono">
-                          {detail.name}
-                        </Typography>
-                        <p className="text-xs leading-relaxed text-muted-foreground">
-                          {detail.desc}
-                        </p>
-                      </div>
-                    ))}
+                    {mod.hardwareMap.details.map((detail) => {
+                      const isSelected = selectedHardware === detail.name
+                      return (
+                        <div 
+                          key={detail.name} 
+                          onClick={() => setSelectedHardware(detail.name)}
+                          className={cn(
+                            "rounded-lg border p-3.5 transition-all duration-300 cursor-pointer select-none",
+                            isSelected 
+                              ? "border-accent bg-accent/15 ring-1 ring-accent/30 shadow-md" 
+                              : "border-border/80 bg-muted/30 hover:border-accent/30"
+                          )}
+                        >
+                          <Typography variant="emphasis" className="text-accent font-semibold block mb-1 text-sm font-mono">
+                            {detail.name}
+                          </Typography>
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            {detail.desc}
+                          </p>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
-                <div className="relative flex items-center justify-center rounded-lg border bg-black/40 overflow-hidden group">
+                <div className="relative flex items-center justify-center rounded-lg border bg-black/40 overflow-hidden select-none">
+                  {/* Изображение железного прибора */}
                   <img 
                     src={mod.hardwareMap.image} 
                     alt="Схема физического уровня устройства" 
-                    className="max-h-[480px] object-contain w-full transition-transform duration-500 group-hover:scale-[1.02]" 
+                    className="max-h-[480px] object-contain w-full" 
                   />
+
+                  {/* Кликабельные и светящиеся оверлеи */}
+                  {mod.hardwareMap.details.map((detail) => {
+                    if (!detail.hotspot) return null
+                    const isSelected = selectedHardware === detail.name
+                    return (
+                      <button
+                        key={`hotspot-${detail.name}`}
+                        type="button"
+                        style={{
+                          position: 'absolute',
+                          left: detail.hotspot.left,
+                          top: detail.hotspot.top,
+                          width: detail.hotspot.width,
+                          height: detail.hotspot.height,
+                        }}
+                        className={cn(
+                          "border-2 rounded transition-all duration-300 pointer-events-auto",
+                          isSelected 
+                            ? "border-accent bg-accent/20 ring-4 ring-accent/30 shadow-[0_0_15px_rgba(244,63,94,0.6)] z-20 scale-[1.02]" 
+                            : "border-accent/40 bg-black/10 hover:border-accent hover:bg-accent/10 z-10"
+                        )}
+                        onClick={() => setSelectedHardware(detail.name)}
+                        title={detail.name}
+                        aria-label={`Выбрать ${detail.name}`}
+                      />
+                    )
+                  })}
+
                   <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-muted-foreground border">
-                    Реальная архитектура платы
+                    Интерактивная плата
                   </div>
                 </div>
               </CardContent>
