@@ -85,6 +85,7 @@ export function ModulePage() {
         <TabsList className="flex h-auto flex-wrap gap-1 border border-border/60 bg-muted/50 p-1">
           {mod.explainer && <TabsTrigger value="explainer">Разбор</TabsTrigger>}
           <TabsTrigger value="scheme">Схема</TabsTrigger>
+          {mod.hardwareMap && <TabsTrigger value="hardware">В железе 🔌</TabsTrigger>}
           <TabsTrigger value="table">Таблица</TabsTrigger>
           <TabsTrigger value="decisions">Решения</TabsTrigger>
           <TabsTrigger value="quiz">Квиз</TabsTrigger>
@@ -125,6 +126,52 @@ export function ModulePage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {mod.hardwareMap && (
+          <TabsContent value="hardware">
+            <Card className="psy-highlight-card backdrop-blur-sm overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <span>🔌 Физический уровень и приборы</span>
+                </CardTitle>
+                <CardDescription>
+                  Как концепции операционной системы соотносятся с реальными физическими чипами и платами на вашем компьютере.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-6 md:grid-cols-2">
+                <div className="flex flex-col justify-between gap-4">
+                  <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 leading-relaxed text-muted-foreground text-sm">
+                    {mod.hardwareMap.text}
+                  </div>
+                  
+                  <div className="grid gap-3">
+                    {mod.hardwareMap.details.map((detail) => (
+                      <div key={detail.name} className="rounded-lg border p-3.5 bg-muted/30 hover:border-accent/20 transition-colors">
+                        <Typography variant="emphasis" className="text-accent font-semibold block mb-1 text-sm font-mono">
+                          {detail.name}
+                        </Typography>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          {detail.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative flex items-center justify-center rounded-lg border bg-black/40 overflow-hidden group">
+                  <img 
+                    src={mod.hardwareMap.image} 
+                    alt="Схема физического уровня устройства" 
+                    className="max-h-[480px] object-contain w-full transition-transform duration-500 group-hover:scale-[1.02]" 
+                  />
+                  <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-muted-foreground border">
+                    Реальная архитектура платы
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="table">
           <Card>

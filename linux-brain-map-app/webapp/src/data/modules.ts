@@ -21,6 +21,17 @@ export type Epigraph = {
   author: string
 }
 
+export type HardwareDetail = {
+  name: string
+  desc: string
+}
+
+export type HardwareMap = {
+  image: string
+  text: string
+  details: HardwareDetail[]
+}
+
 export type Module = {
   id: string
   number: number
@@ -37,6 +48,7 @@ export type Module = {
   pythonScript?: string
   hygieneRef?: string
   quiz: QuizQuestion[]
+  hardwareMap?: HardwareMap
 }
 
 export const MODULES: Module[] = [
@@ -98,6 +110,16 @@ export const MODULES: Module[] = [
         explanation: 'procfs не лежит на диске — ядро формирует содержимое при каждом чтении.',
       },
     ],
+    hardwareMap: {
+      image: '/src/assets/motherboard_layers.jpg',
+      text: 'Взаимодействие операционной системы Linux с физическими компонентами компьютера (материнской платой, процессором и оперативной памятью).',
+      details: [
+        { name: 'Центральный процессор (CPU)', desc: 'Физический чип, который выполняет машинный код. Ядро Linux работает в привилегированном режиме процессора (CPL 0 / ring 0), получая полный доступ к наборам инструкций и регистрам, тогда как прикладные программы ограничены режимом пользователя (ring 3).' },
+        { name: 'Оперативная память (RAM)', desc: 'Физические микросхемы DDR, разделенные на ячейки. В ней хранятся запущенные процессы пользовательского пространства (ring 3). Ядро управляет распределением этих физических страниц.' },
+        { name: 'Твердотельный накопитель (SSD/NVMe)', desc: 'Физический диск, подключенный по шине PCIe. Здесь хранятся бинарные файлы программ до запуска. Доступ к диску контролируется ядром через драйверы контроллера.' },
+        { name: 'Шина данных (System Bus)', desc: 'Физические медные дорожки на плате, передающие электрические сигналы между CPU, RAM и внешними устройствами.' }
+      ]
+    }
   },
   {
     id: 'boot',
